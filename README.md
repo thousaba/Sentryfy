@@ -79,3 +79,11 @@ Express + Socket.IO + Telegram entegrasyonu ile webhook'tan gelen alertler işle
 ### Telegram Bildirimleri
 
 ![telegram alerts](screenshots/signal-ss.jpeg?v=2)
+
+### Kişisel USB cihazımızın sistem tarafından tanınması diğer cihazların ise alarm vermesi : 
+
+![sentryfy dashboard](screenshots/ss11.png?v=2)
+
+
+### Sonucu Wazuh'un log ekranından görüyoruz (Takılan USB cihazının adını da dinamik olarak gösteriyoruz):
+![sentryfy dashboard](screenshots/ss12.png?v=2)
