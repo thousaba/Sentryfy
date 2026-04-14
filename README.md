@@ -1,89 +1,109 @@
-# Sentryfy — Wazuh Tabanlı Gerçek Zamanlı SIEM Dashboard
+# Sentryfy — Gerçek Zamanlı SIEM Dashboard
 
-Windows agent üzerinden Wazuh ile log toplayan, özel kurallarla alert üreten, Telegram bildirimi gönderen ve canlı React dashboard'u olan bir güvenlik izleme projesi.
+Birden fazla güvenlik platformundan gelen alertleri tek bir dashboard'da toplayan, Telegram üzerinden anlık bildirim gönderen açık kaynaklı bir SIEM izleme projesi.
+
+---
+
+## Genel Bakış
+
+Sentryfy; **Wazuh** ve **Splunk** gibi güvenlik platformlarından gelen alertleri webhook aracılığıyla yakalar, Node.js backend üzerinden işler ve React tabanlı canlı bir dashboard'a yansıtır. Aynı zamanda Telegram Bot entegrasyonu sayesinde önemli olaylar anında mobil bildirime dönüşür.
+
+Proje sürekli geliştirilmekte olup yeni SIEM platformları, olay türleri ve kurallar düzenli olarak eklenmektedir.
 
 ---
 
 ## Mimari
 
 ```
-Windows Agent (Wazuh) → Wazuh Manager → Webhook (ngrok) → Node.js Backend → React Dashboard
-                                                                          ↓
-                                                                   Telegram Bot
+SIEM Platformları
+ ├── Wazuh Manager  ──┐
+ └── Splunk Enterprise ┘
+           │
+     Webhook (POST)
+           │
+     Node.js Backend  (Express + Socket.IO)
+      ├── React Dashboard  (canlı, Socket.IO)
+      └── Telegram Bot     (anlık bildirim)
 ```
 
 ---
 
-## Kurulum & Yapılandırma
+## Teknoloji Yığını
 
-### 1. Wazuh Agent — ossec.conf Log Kaynakları
-
-Windows agent'a izlenecek log kaynakları eklendi.
-
-![ossec.conf localfile config](screenshots/ss1.png?v=2)
-
-### 2. Windows Audit Policy Aktifleştirme
-
-Başarısız login olaylarının loglanması için `auditpol` ile denetim politikası açıldı.
-
-![auditpol powershell](screenshots/ss2.png?v=2)
-
-### 3. Özel Wazuh Kuralları
-
-Windows başarısız login ve USB takma olayları için özel kurallar tanımlandı.
-
-![custom wazuh rules](screenshots/ss5.png?v=2)
-
-### 4. Wazuh Webhook Entegrasyonu
-
-Wazuh manager, alertleri ngrok üzerinden backend'e iletecek şekilde yapılandırıldı.
-
-![wazuh integration config](screenshots/ss6.png?v=2)
-
-### 5. ngrok Tüneli
-
-Backend'i dışarıya açmak için ngrok kullanıldı.
-
-![ngrok tunnel](screenshots/ss4.png?v=2)
-
-### 6. Backend Kodu
-
-Express + Socket.IO + Telegram entegrasyonu ile webhook'tan gelen alertler işlendi.
-
-![backend code](screenshots/ss3.png?v=2)
+| Katman | Teknoloji |
+|---|---|
+| Backend | Node.js, Express, TypeScript, Socket.IO |
+| Frontend | React, TypeScript, Vite, Socket.IO Client |
+| SIEM | Wazuh, Splunk Enterprise |
+| Bildirim | Telegram Bot API |
+| Tünel | ngrok |
 
 ---
 
-## Test
+## Klasör Yapısı
 
-### Yanlış Kullanıcı ile Giriş Denemesi
-
-`runas` komutu ile kasıtlı başarısız login denemesi yapıldı.
-
-![failed login test](screenshots/ss7.png?v=2)
+```
+Sentryfy/
+├── Backend/          # Express + Socket.IO sunucusu, webhook endpoint'leri
+│   └── src/
+│       └── index.ts
+├── Dashboard/        # React dashboard (canlı alert görüntüleme)
+│   └── src/
+├── RULES/            # Kural ve sorgu dokümantasyonu
+│   ├── Wazuh-Rules.md
+│   └── Splunk-Rules.md
+└── screenshots/      # Ekran görüntüleri
+```
 
 ---
 
-## Sonuçlar
+## Kurulum
 
-### Wazuh Discover — Alertler
+### Gereksinimler
 
-![wazuh discover login](screenshots/ss9.png?v=2)
+- Node.js 18+
+- Çalışan bir Wazuh veya Splunk kurulumu
+- Telegram Bot Token ve Chat ID
 
-![wazuh discover usb](screenshots/ss10.png?v=2)
+### Backend
 
-### React Dashboard
+```bash
+cd Backend
+npm install
+cp .env.example .env   # TELEGRAM_TOKEN ve TELEGRAM_CHAT_ID gir
+npm run dev
+```
 
-![sentryfy dashboard](screenshots/ss8.png?v=2)
+### Dashboard
 
-### Telegram Bildirimleri
+```bash
+cd Dashboard
+npm install
+npm run dev
+```
 
-![telegram alerts](screenshots/signal-ss.jpeg?v=2)
+### Dış Erişim (Wazuh webhook için)
 
-### Kişisel USB cihazımızın sistem tarafından tanınması diğer cihazların ise alarm vermesi : 
+```bash
+ngrok http 3000
+```
 
-![sentryfy dashboard](screenshots/ss12.png?v=2)
+Ngrok URL'ini Wazuh `ossec.conf` integration bloğuna veya Splunk Alert webhook ayarına gir.
 
+---
 
-### Sonucu Wazuh'un log ekranından görüyoruz (Takılan USB cihazının adını da dinamik olarak gösteriyoruz):
-![sentryfy dashboard](screenshots/ss11.png?v=2)
+## Webhook Endpoint'leri
+
+| Platform | Endpoint |
+|---|---|
+| Wazuh | `POST /api/webhook/wazuh` |
+| Splunk | `POST /api/webhook/splunk` |
+
+---
+
+## Kural Dokümantasyonu
+
+Platform bazlı kural ve sorgu açıklamaları için `RULES/` klasörüne bakınız.
+
+---
+

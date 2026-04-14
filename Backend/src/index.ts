@@ -76,6 +76,30 @@ app.post('/api/webhook/wazuh', async (req: Request, res: Response) => {
   res.status(200).send('Log alındı 🍻');
 });
 
+
+// Splunk webhook
+app.post('/api/webhook/splunk', async (req: Request, res: Response) => {
+  const alertData = req.body;
+  
+  const message = `🚨 *SPLUNK ALARM* 🚨\n\n` +
+                  `*Kural:* ${alertData.search_name}\n` +
+                  `*Sonuç:* ${alertData.result?.host} üzerinde ${alertData.result?.count} başarısız login\n` +
+                  `*Zaman:* ${new Date().toISOString()}`;
+
+  try {
+    await axios.post(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+      chat_id: TELEGRAM_CHAT_ID,
+      text: message,
+      parse_mode: 'Markdown'
+    });
+    console.log('✅ Splunk alarmı Telegram\'a gönderildi!');
+  } catch (error: any) {
+    console.error('❌ Telegram hatası:', error?.response?.data || error.message);
+  }
+
+  res.status(200).send('Splunk alarmı alındı 🍻');
+});
+
 // app.listen yerine httpServer.listen
 httpServer.listen(PORT, () => {
   console.log(`Sentryfy Backend ayakta! Port: ${PORT} 🛡️`);
