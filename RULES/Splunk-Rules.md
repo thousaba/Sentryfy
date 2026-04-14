@@ -55,5 +55,5 @@ EventCode=4625 olaylarının Splunk'a düştüğü ve sorgunun sonuç ürettiği
 
 Telegram uygulamasına express ile yapılandırdığımız bot araclığıyla anlık bildirimlerin gelmesi 
 
-![splunk search results](../screenshots/splunk-ss6.png?v=2)
+![splunk search results](../screenshots/splunk-ss6.jpeg?v=2)
 

@@ -20,7 +20,7 @@ Windows Agent (Wazuh) → Wazuh Manager → Webhook (ngrok) → Node.js Backend 
 
 Windows agent'a izlenecek log kaynakları eklendi.
 
-![ossec.conf localfile config](../../screenshots/ss1.png?v=2)
+![ossec.conf localfile config](../screenshots/ss1.png?v=2)
 
 ### 2. Windows Audit Policy Aktifleştirme
 
