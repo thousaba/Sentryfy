@@ -1,0 +1,53 @@
+#index=* EventCode=4625 
+#| stats count as event_count by TargetUserName, host 
+#| search event_count >= 5 
+#| rename TargetUserName as User, host as ComputerName
+#| table User, ComputerName, event_count
+
+title: Failed Windows Logon
+id: aaaaaaaa-0000-0000-0000-000000000001
+status: experimental
+description: Her başarısız Windows logon'u (base event, tek başına alert değil)
+author: Tevfik Turkoglu
+date: 2026/04/15
+name: failed_windows_logon
+logsource:
+  product: windows
+  service: security
+detection:
+  selection:
+    EventID: 4625
+  filter_machine_accounts:
+    TargetUserName|endswith: '$'
+  filter_system:
+    TargetUserName:
+      - 'SYSTEM'
+      - 'ANONYMOUS LOGON'
+      - '-'
+  condition: selection and not 1 of filter_*
+level: informational
+tags:
+  - attack.credential_access
+
+---
+
+title: Brute Force - Multiple Failed Logins
+id: bbbbbbbb-0000-0000-0000-000000000002
+status: experimental
+description: Aynı kullanıcı için 5 dakika içinde 5+ başarısız logon denemesi
+author: Tevfik Turkoglu
+date: 2026/04/15
+correlation:
+  type: event_count
+  rules:
+    - failed_windows_logon
+  group-by:
+    - TargetUserName
+  timespan: 5m
+  condition:
+    gte: 5
+level: medium
+tags:
+  - attack.credential_access
+  - attack.t1110
+  - attack.t1110.001

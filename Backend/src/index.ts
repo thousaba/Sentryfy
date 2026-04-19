@@ -22,7 +22,7 @@ const io = new Server(httpServer, {
 app.use(cors());
 app.use(express.json());
 
-const PORT = process.env.PORT || 3000;
+const PORT = Number(process.env.PORT) || 3000;
 
 // Socket.IO bağlantı log'u
 io.on('connection', (socket) => {
@@ -77,30 +77,80 @@ app.post('/api/webhook/wazuh', async (req: Request, res: Response) => {
 });
 
 
-// Splunk webhook
 app.post('/api/webhook/splunk', async (req: Request, res: Response) => {
-  const alertData = req.body;
-  
-  const message = `🚨 *SPLUNK ALARM* 🚨\n\n` +
-                  `*Kural:* ${alertData.search_name}\n` +
-                  `*Sonuç:* ${alertData.result?.host} üzerinde ${alertData.result?.count} başarısız login\n` +
-                  `*Zaman:* ${new Date().toISOString()}`;
-
   try {
-    await axios.post(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
-      chat_id: TELEGRAM_CHAT_ID,
-      text: message,
-      parse_mode: 'Markdown'
-    });
-    console.log('✅ Splunk alarmı Telegram\'a gönderildi!');
-  } catch (error: any) {
-    console.error('❌ Telegram hatası:', error?.response?.data || error.message);
-  }
+    const alertData = req.body;
+    const result = alertData.result ?? {};
+    const searchName = alertData.search_name ?? 'Splunk Alert';
+    
+    console.log('📦 Splunk webhook payload:', JSON.stringify(alertData, null, 2));
 
-  res.status(200).send('Splunk alarmı alındı 🍻');
+    const computer = result.ComputerName ?? result.host ?? 'Bilinmiyor';
+    const user = result.User ?? result.user ?? result.SubjectUserName ?? 'Bilinmiyor';
+    const time = result._time ?? new Date().toISOString();
+
+    const metaFields = ['_time', '_raw', 'host', 'source', 'sourcetype', 'index',
+                        'ComputerName', 'User', 'SubjectUserName'];
+    const customFields = Object.entries(result)
+      .filter(([key]) => !metaFields.includes(key) && !key.startsWith('_'))
+      .filter(([, value]) => value !== null && value !== undefined && value !== '')
+      .slice(0, 5);
+
+    // Frontend emit
+    const normalizedAlert = {
+      timestamp: time,
+      source: 'splunk',
+      rule: { id: 'splunk', level: 10, description: searchName },
+      agent: { id: 'splunk', name: computer, ip: computer },
+      raw: result,
+    };
+    io.emit('new-alert', normalizedAlert);
+    console.log("📡 Splunk alarmı frontend'e emit edildi");
+
+    // HTML escape helper
+    const esc = (text: any) => String(text)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+
+    // Telegram mesajı (HTML format)
+    let message = `🚨 <b>SPLUNK ALARM</b> 🚨\n\n`;
+    message += `<b>Kural:</b> ${esc(searchName)}\n`;
+    message += `<b>Bilgisayar:</b> ${esc(computer)}\n`;
+    message += `<b>Kullanıcı:</b> ${esc(user)}\n`;
+
+    for (const [key, value] of customFields) {
+      let valStr = String(value);
+      if (valStr.length > 300) valStr = valStr.substring(0, 300) + '...';
+      message += `<b>${esc(key)}:</b> <code>${esc(valStr)}</code>\n`;
+    }
+
+    message += `\n<b>Zaman:</b> ${esc(time)}`;
+
+    // 4096 char limit koruması
+    if (message.length > 4000) {
+      message = message.substring(0, 3900) + '\n\n... (mesaj kısaltıldı)';
+    }
+
+    await axios.post(
+      `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`,
+      {
+        chat_id: TELEGRAM_CHAT_ID,
+        text: message,
+        parse_mode: 'HTML',
+      }
+    );
+    console.log("✅ Splunk alarmı Telegram'a gönderildi!");
+    
+    res.status(200).json({ received: true });
+  } catch (error: any) {
+    console.error('❌ Webhook hatası:', error?.response?.data || error.message);
+    res.status(500).json({ error: 'Webhook processing failed' });
+  }
 });
 
+
 // app.listen yerine httpServer.listen
-httpServer.listen(PORT, () => {
+httpServer.listen(PORT, '0.0.0.0', () => {
   console.log(`Sentryfy Backend ayakta! Port: ${PORT} 🛡️`);
 });

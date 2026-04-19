@@ -1,0 +1,53 @@
+#sourcetype="XmlWinEventLog" EventCode=4688
+#(NewProcessName="*\\powershell.exe" OR NewProcessName="*\\pwsh.exe")
+#(CommandLine="* -enc *" OR CommandLine="* -EncodedCommand*" OR CommandLine="* -ec *"
+# OR CommandLine="* -w hidden*" OR CommandLine="* -WindowStyle Hidden*"
+# OR CommandLine="* -nop *" OR CommandLine="* -NoProfile*"
+# OR CommandLine="*IEX *" OR CommandLine="*Invoke-Expression*"
+# OR CommandLine="*DownloadString*" OR CommandLine="*DownloadFile*"
+ #OR CommandLine="*FromBase64String*"
+ #OR CommandLine="*-ep bypass*" OR CommandLine="*-ExecutionPolicy Bypass*")
+#| table _time, SubjectUserName, Computer, CommandLine, ParentProcessName
+
+
+title: Suspicious PowerShell Execution
+id: ps01
+status: experimental
+description: Şüpheli PowerShell kullanımı - encoded command, hidden window, download-execute
+author: Tevfik Turkoglu
+date: 2026/04/17
+logsource:
+  product: windows
+  service: security
+detection:
+  process:
+    EventID: 4688
+    NewProcessName|endswith:
+      - '\powershell.exe'
+      - '\pwsh.exe'
+  suspicious_flags:
+    CommandLine|contains:
+      - ' -enc '
+      - ' -EncodedCommand'
+      - ' -ec '
+      - ' -w hidden'
+      - ' -WindowStyle Hidden'
+      - ' -nop '
+      - ' -NoProfile'
+      - 'IEX '
+      - 'Invoke-Expression'
+      - 'DownloadString'
+      - 'DownloadFile'
+      - 'FromBase64String'
+      - '-ep bypass'
+      - '-ExecutionPolicy Bypass'
+  condition: process and suspicious_flags
+fields:
+  - CommandLine
+  - ParentProcessName
+  - SubjectUserName
+level: high
+tags:
+  - attack.execution
+  - attack.t1059.001
+  - attack.defense_evasion

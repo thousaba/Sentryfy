@@ -1,0 +1,33 @@
+# source="WinEventLog:System" EventCode=6416 NOT (win.eventdata.deviceId IN ("B06EBF0AB49FE651F14647C0", "USB\\VID_04E8&PID_6860&MS_COMP_MTP&SAMSUNG_Android\\6&19195939&0&0000")) | table ComputerName,SubjectUserName,win.eventdata.deviceId,win.eventdata.deviceDescription
+title: Sentryfy - Unauthorized USB Device Connected
+id: 12345678-0000-0000-0000-000000000003
+status: experimental
+description: Detects unauthorized USB device connection by checking against whitelist
+references:
+  - https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-6416
+author: Tevfik Turkoglu
+date: 2026/04/15
+logsource:
+  product: windows
+  service: security
+detection:
+  selection:
+    EventID: 6416
+  filter_whitelist:
+    win.eventdata.deviceId:
+      - 'B06EBF0AB49FE651F14647C0'
+      - 'USB\VID_04E8&PID_6860&MS_COMP_MTP&SAMSUNG_Android\6&19195939&0&0000'
+  condition: selection and not filter_whitelist
+fields:
+  - ComputerName
+  - SubjectUserName
+  - win.eventdata.deviceId
+  - win.eventdata.deviceDescription
+falsepositives:
+  - New legitimate devices not yet added to whitelist
+  - IT-approved peripherals during onboarding
+level: high
+tags:
+  - attack.initial_access
+  - attack.t1200
+  - attack.hardware_additions
