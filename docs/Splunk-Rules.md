@@ -21,7 +21,7 @@ Windows Event Logs → Splunk Enterprise → Alert (Webhook) → Node.js Backend
 Rules klasöründe yazmış olduğumuz Brute Force saldırılarını tespit etmemize imkan sağlayan kuralımızı Sigma formatında yazıyoruz. Ardından bu kuralı Splunk formatına convert ediyoruz. Sigma bize otomatik olarak Splunk sorgusu üretiyor. Bu sorguyu Splunk sisteminde log tespiti ve alert üretmek gibi alanlarda daha sonra kullanacağız.
 
 Kural Dosyasına ulaşmak için linke tıklayınız.
-- [Sigma Rule (YML Format)](../rules/brute-force.yml) 👈 
+- [Sigma Rule (YML Format)](../Rules/brute-force.yml) 👈 
 
 ### 2. PowerShell ile Test Amaaçlı Brute Force Denemesi
 
@@ -62,7 +62,7 @@ Yazdığımız kuralda bazı şüpheli komutları yakalamak istememizin sebebi:
 -w hidden komutu : script arka planda çalışır ve kullanıcıya herhangi bir pencerede gösterilmez.
 
 Kural Dosyasına ulaşmak için linke tıklayınız.
-- [Sigma Rule (YML Format)](../rules/suspicious-command.yml) 👈 
+- [Sigma Rule (YML Format)](../Rules/suspicious-command.yml) 👈 
 
 
 ### 2. Kuralı test etme aşaması 
