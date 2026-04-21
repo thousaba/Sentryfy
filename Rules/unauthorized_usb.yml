@@ -1,4 +1,7 @@
-# source="WinEventLog:System" EventCode=6416 NOT (win.eventdata.deviceId IN ("B06EBF0AB49FE651F14647C0", "USB\\VID_04E8&PID_6860&MS_COMP_MTP&SAMSUNG_Android\\6&19195939&0&0000")) | table ComputerName,SubjectUserName,win.eventdata.deviceId,win.eventdata.deviceDescription
+#source="XmlWinEventLog:Security" EventCode=6416
+#NOT DeviceId="*B06EBF0AB49FE651F14647C0*"
+#| table _time, ComputerName, SubjectUserName, DeviceId, DeviceDescription
+
 title: Sentryfy - Unauthorized USB Device Connected
 id: 12345678-0000-0000-0000-000000000003
 status: experimental
@@ -16,7 +19,6 @@ detection:
   filter_whitelist:
     win.eventdata.deviceId:
       - 'B06EBF0AB49FE651F14647C0'
-      - 'USB\VID_04E8&PID_6860&MS_COMP_MTP&SAMSUNG_Android\6&19195939&0&0000'
   condition: selection and not filter_whitelist
 fields:
   - ComputerName

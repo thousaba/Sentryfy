@@ -20,6 +20,18 @@ const io = new Server(httpServer, {
 });
 
 app.use(cors());
+
+app.use('/api/webhook/splunk', (req, res, next) => {
+  let data = '';
+  req.setEncoding('utf8');
+  req.on('data', chunk => { data += chunk; });
+  req.on('end', () => {
+    console.log('🔍 CONTENT-TYPE:', req.headers['content-type']);
+    console.log('🔍 RAW BODY:', data);
+    next();
+  });
+});
+
 app.use(express.json());
 
 const PORT = Number(process.env.PORT) || 3000;
