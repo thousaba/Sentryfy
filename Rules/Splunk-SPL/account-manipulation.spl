@@ -1,0 +1,24 @@
+sourcetype="XmlWinEventLog" (EventCode=4720 OR EventCode=4732 OR EventCode=4728 OR EventCode=4756)
+| eval event_desc=case(
+    EventCode=4720, "New user account created",
+    EventCode=4732, "Member added to local group",
+    EventCode=4728, "Member added to global security group",
+    EventCode=4756, "Member added to universal security group"
+  )
+| eval GroupName=if(EventCode=4720, "N/A (user creation)", TargetUserName)
+| eval CreatedOrAddedUser=if(EventCode=4720, TargetUserName, coalesce(MemberName, MemberSid))
+| where NOT match(SubjectUserName, "\$$")
+| where NOT SubjectUserName IN ("SYSTEM", "LOCAL SERVICE", "NETWORK SERVICE")
+| where NOT (EventCode IN (4732, 4728, 4756) AND GroupName IN ("Users", "Yok", "None"))
+| eval severity=case(
+    EventCode IN (4732, 4728, 4756) AND match(GroupName, "(?i)(administrators|domain admins|enterprise admins|schema admins|backup operators|remote desktop users|remote management users|account operators|server operators)"), "critical",
+    EventCode=4720, "high",
+    true(), "medium"
+  )
+| eval alert_type=case(
+    severity="critical", "Privileged Group Membership Added (T1098)",
+    severity="high", "New User Account Created (T1136)",
+    true(), "Account Group Modification"
+  )
+| table _time, Computer, SubjectUserName, event_desc, GroupName, CreatedOrAddedUser, severity, alert_type
+| sort -_time

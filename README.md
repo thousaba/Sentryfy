@@ -1,76 +1,76 @@
-# Sentryfy — Gerçek Zamanlı SIEM Dashboard
+# Sentryfy — Real-Time SIEM Dashboard
 
-Birden fazla güvenlik platformundan gelen alertleri tek bir dashboard'da toplayan, Telegram üzerinden anlık bildirim gönderen açık kaynaklı bir SIEM izleme projesi.
-
----
-
-## Genel Bakış
-
-Sentryfy; **Wazuh** ve **Splunk** gibi güvenlik platformlarından gelen alertleri webhook aracılığıyla yakalar, Node.js backend üzerinden işler ve React tabanlı canlı bir dashboard'a yansıtır. Aynı zamanda Telegram Bot entegrasyonu sayesinde önemli olaylar anında mobil bildirime dönüşür.
-
-Proje sürekli geliştirilmekte olup yeni SIEM platformları, olay türleri ve kurallar düzenli olarak eklenmektedir.
+An open-source SIEM monitoring project that aggregates alerts from multiple security platforms into a single dashboard and delivers instant notifications via Telegram.
 
 ---
 
-## Mimari
+## Overview
+
+Sentryfy captures alerts from security platforms such as **Wazuh** and **Splunk** via webhooks, processes them through a Node.js backend, and reflects them on a live React-based dashboard. Through Telegram Bot integration, critical events are instantly delivered as mobile notifications.
+
+The project is under active development — new SIEM platforms, event types, and rules are added regularly.
+
+---
+
+## Architecture
 
 ```
-SIEM Platformları
+SIEM Platforms
  ├── Wazuh Manager  ──┐
  └── Splunk Enterprise ┘
            │
      Webhook (POST)
            │
      Node.js Backend  (Express + Socket.IO)
-      ├── React Dashboard  (canlı, Socket.IO)
-      └── Telegram Bot     (anlık bildirim)
+      ├── React Dashboard  (live, Socket.IO)
+      └── Telegram Bot     (instant notifications)
 ```
 
 ---
 
-## Teknoloji Yığını
+## Tech Stack
 
-| Katman | Teknoloji |
+| Layer | Technology |
 |---|---|
 | Backend | Node.js, Express, TypeScript, Socket.IO |
 | Frontend | React, TypeScript, Vite, Socket.IO Client |
 | SIEM | Wazuh, Splunk Enterprise |
-| Bildirim | Telegram Bot API |
-| Tünel | ngrok |
+| Notifications | Telegram Bot API |
+| Tunnel | ngrok |
 
 ---
 
-## Klasör Yapısı
+## Folder Structure
 
 ```
 Sentryfy/
-├── Backend/          # Express + Socket.IO sunucusu, webhook endpoint'leri
+├── Backend/          # Express + Socket.IO server, webhook endpoints
 │   └── src/
 │       └── index.ts
-├── Dashboard/        # React dashboard (canlı alert görüntüleme)
+├── Dashboard/        # React dashboard (live alert display)
 │   └── src/
-├── RULES/            # Kural ve sorgu dokümantasyonu
+├── RULES/            # Rule and query documentation
 │   ├── Wazuh-Rules.md
 │   └── Splunk-Rules.md
-└── screenshots/      # Ekran görüntüleri
+└── screenshots/      # Screenshots
 ```
 
 ---
 
-## Kurulum
+## Setup
 
-### Gereksinimler
+### Requirements
 
 - Node.js 18+
-- Çalışan bir Wazuh veya Splunk kurulumu
-- Telegram Bot Token ve Chat ID
+- A running Wazuh or Splunk installation
+- Telegram Bot Token and Chat ID
 
 ### Backend
 
 ```bash
 cd Backend
 npm install
-cp .env.example .env   # TELEGRAM_TOKEN ve TELEGRAM_CHAT_ID gir
+cp .env.example .env   # Enter TELEGRAM_TOKEN and TELEGRAM_CHAT_ID
 npm run dev
 ```
 
@@ -82,17 +82,17 @@ npm install
 npm run dev
 ```
 
-### Dış Erişim (Wazuh webhook için)
+### External Access (for Wazuh webhook)
 
 ```bash
 ngrok http 3000
 ```
 
-Ngrok URL'ini Wazuh `ossec.conf` integration bloğuna veya Splunk Alert webhook ayarına gir.
+Enter the ngrok URL into the Wazuh `ossec.conf` integration block or the Splunk Alert webhook setting.
 
 ---
 
-## Webhook Endpoint'leri
+## Webhook Endpoints
 
 | Platform | Endpoint |
 |---|---|
@@ -101,9 +101,9 @@ Ngrok URL'ini Wazuh `ossec.conf` integration bloğuna veya Splunk Alert webhook 
 
 ---
 
-## Kural Dokümantasyonu
+## Rule Documentation
 
-Platform bazlı kural ve sorgu açıklamaları için `RULES/` klasörüne bakınız.
+See the `RULES/` folder for platform-specific rule and query documentation.
 
 ---
 

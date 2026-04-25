@@ -1,0 +1,11 @@
+index=* EventCode=4688
+| where match(CommandLine, "(?i)Set-MpPreference|Add-MpPreference|sc.*WinDefend|Disable-WindowsOptionalFeature")
+| eval severity=case(
+    match(CommandLine, "(?i)DisableRealtimeMonitoring"), "critical",
+    match(CommandLine, "(?i)sc\s+(stop|delete|config).*windefend"), "critical",
+    match(CommandLine, "(?i)add-mppreference.*exclusion"), "high",
+    1=1, "medium"
+  )
+| eval alert_type="Windows Defender Tampering Attempt (T1562.001)"
+| table _time, Computer, SubjectUserName, CommandLine, severity, alert_type
+| sort -_time

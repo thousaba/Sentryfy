@@ -1,10 +1,10 @@
-# Sentryfy — Splunk Tabanlı Gerçek Zamanlı SIEM Dashboard
+# Sentryfy — Splunk-Based Real-Time SIEM Dashboard
 
-Windows loglarını Splunk ile izleyen, SPL sorguları ve özel kurallarla logları tespit eden, Telegram bildirimi gönderen ve canlı React dashboard'u olan bir güvenlik izleme projesi.
+A security monitoring project that monitors Windows logs with Splunk, detects events using SPL queries and custom rules, sends Telegram notifications, and features a live React dashboard.
 
 ---
 
-## Mimari
+## Architecture
 
 ```
 Windows Event Logs → Splunk Enterprise → Alert (Webhook) → Node.js Backend → React Dashboard
@@ -14,139 +14,285 @@ Windows Event Logs → Splunk Enterprise → Alert (Webhook) → Node.js Backend
 
 ---
 
-### A- BRUTE FORCE 
+### 1- BRUTE FORCE 
 
-### 1. Sigma ile Brute Force Kuralı Yazıyoruz
+# A. Writing a Brute Force Rule with Sigma
 
-Rules klasöründe yazmış olduğumuz Brute Force saldırılarını tespit etmemize imkan sağlayan kuralımızı Sigma formatında yazıyoruz. Ardından bu kuralı Splunk formatına convert ediyoruz. Sigma bize otomatik olarak Splunk sorgusu üretiyor. Bu sorguyu Splunk sisteminde log tespiti ve alert üretmek gibi alanlarda daha sonra kullanacağız.
+We write the Brute Force detection rule — already created in the Rules folder — in Sigma format. We then convert this rule to Splunk format. Sigma automatically generates a Splunk query for us. We will later use this query in the Splunk system for log detection and alert generation.
 
-Kural Dosyasına ulaşmak için linke tıklayınız.
+Click the link to access the rule file.
 - [Sigma Rule (YML Format)](../Rules/brute-force.yml) 👈 
 
-### 2. PowerShell ile Test Amaaçlı Brute Force Denemesi
+# B. Simulating a Brute Force Attack with PowerShell for Testing
 
-Powershell'i yönetici olarak çalıştırıyoruz. Ardından Windows loglarını izleyen Splunk için aşağıdaki komut ile sahte bir brute force saldırısı gerçekleştiriyoruz.
+We run PowerShell as administrator. We then simulate a fake brute force attack with the command below, targeting Splunk which monitors Windows logs.
 
 ![splunk alert config](../screenshots/splunk-bruteforce-2.png?v=2)
 
-### 3. Splunk Sisteminde Log Kontrolü 
+# C. Log Verification in Splunk
 
-Convert etmiş olduğumuz Splunk sorgusunu kullanma vakti geldi. Splunk'ın Search&Reporting kısmındaki Search Bar'a convert etmiş olduğumuz sorguyu yapıştırıyoruz. Test sonucunda Splunk sistemine brute force logunun düştüğünü görüyoruz. Bu logu ister alert olarak ister Splunk içerisinde oluşturacağımız Dashboard alanında grafik olarak yakalayabiliriz. 
+It's time to use the converted Splunk query. We paste the converted query into the Search Bar in Splunk's Search & Reporting section. The test confirms that the brute force log has been ingested into Splunk. We can capture this log either as an alert or as a chart on a Dashboard we create inside Splunk.
 
 ![backend webhook code](../screenshots/splunk-bruteforce-1.png?v=2)
 
-### 4. Splunk Dashboard 
-"HackerTurkoglu" adlı kullanıcıya yapmış olduğumuz brute force saldırısını Splunk'ta oluşturmuş olduğumuz Dashboard ekranında Pie Chart grafiği ile takip edebiliyoruz. Bu grafikte her kullanıcıya yapılan saldırı miktarını takip edebiliriz.
+# D. Splunk Dashboard 
+We can track the brute force attack performed against the user "HackerTurkoglu" on the Dashboard we created in Splunk using a Pie Chart. This chart lets us monitor the number of attacks against each user.
 
 ![sigma rule](../screenshots/splunk-bruteforce-3.png?v=2)
 
 
 
-### 5. Telegram Bildirimi
+# E. Telegram Notification
 
-Telegram uygulamasına express ile yapılandırdığımız bot araclığıyla anlık bildirimlerin gelmesi 
+Instant notifications arriving through the bot we configured with Express in the Telegram application.
 
 ![splunk search results](../screenshots/splunk-bruteforce-4.png?v=2)
 
 
 ---
 
-### B- SUSPICIOUS POWERSHELL COMMAND
+### 2- SUSPICIOUS POWERSHELL COMMAND
 
-### 1. Sigma Aracılığıyla Kural Yazımı
+# A. Writing the Rule with Sigma
 
-Şüpheli powershell komutlarını tespit etmek amacıyla Sigma ile kural yazıyoruz ve convert ile Splunk sorgusu formatına uyarlıyoruz.
+We write a rule with Sigma to detect suspicious PowerShell commands and convert it to Splunk query format.
 
-Yazdığımız kuralda bazı şüpheli komutları yakalamak istememizin sebebi:
--enc komutu : Base64 encode edip komutun içeriğini gizlemek için kullanılır.
--w hidden komutu : script arka planda çalışır ve kullanıcıya herhangi bir pencerede gösterilmez.
+The reason we want to catch certain suspicious commands in the rule:
+- `-enc` flag: Used to Base64-encode and hide the content of a command.
+- `-w hidden` flag: The script runs in the background and is not shown to the user in any window.
 
-Kural Dosyasına ulaşmak için linke tıklayınız.
+Click the link to access the rule file.
 - [Sigma Rule (YML Format)](../Rules/suspicious-command.yml) 👈 
 
 
-### 2. Kuralı test etme aşaması 
+# B. Testing the Rule
 
-Yazdığımız kuralı test etmek için kasıtlı olarak powershell üzerinden test gerçekleştiriyoruz.
+We intentionally run a test via PowerShell to validate the rule we wrote.
 
 ![splunk rule test](../screenshots/splunk-ps-1.png?v=2)
 
 
-### 3. Splunk Üzerinden Log Kontrolü
+# C. Log Verification in Splunk
 
-Testimizi yaptıktan sonra Splunk Search üzerinden convert etmiş olduğumuz sorgu ile arama gerçekleştiriyoruz.
+After running the test, we search in Splunk Search using our converted query.
 
 ![splunk search results](../screenshots/splunk-ps-2.png?v=2)
 
-Yazdığımız sorgunun aynı zamanda standart Windows süreçlerinde false positive (noise) ürettiğini görüyoruz :
+We observe that our query also produces false positives (noise) from standard Windows processes:
 
 ![splunk search results](../screenshots/splunk-ps-3.png?v=2)
 
-Dolayısıyla Sigma kuralında ve Splunk sorgusunda bu durumu gidermemiz için eklemeler yapmamız gerekiyor:
+Therefore, we need to add exclusions to both the Sigma rule and the Splunk query to address this:
 
-``
+```
 filter_driverstore:
     ParentProcessName|contains:
       - '\DriverStore\FileRepository\'
       - '\Windows\System32\msiexec.exe'
       - '\Windows\SoftwareDistribution\'
-``  
-filter_driverstore ile eğer bu şüpheli görünen PowerShell işlemini başlatan "baba" süreç (ParentProcessName), sürücü deposu (DriverStore), Windows Installer (msiexec.exe) veya Windows Update (SoftwareDistribution) klasöründen geliyorsa, "Bu sistemin kendi işidir, dokunma" diyoruz.
+``` 
 
-NOT: Diyelim ki bir saldırgan sisteme sızdı ve bir şekilde msiexec.exe (Windows Installer) sürecine kod enjekte etti. Eğer saldırgan, PowerShell zararlısını bu "güvenilir" görünen msiexec.exe üzerinden başlatırsa yazdığımız kural filtreye takılır ve alarm üretmez.
+With `filter_driverstore`, if the parent process (ParentProcessName) that spawned this suspicious-looking PowerShell process originates from the driver store (DriverStore), Windows Installer (msiexec.exe), or the Windows Update (SoftwareDistribution) folder, we say "This is the system's own business — leave it alone."
 
-Bknz: 
+NOTE: Suppose an attacker has infiltrated the system and somehow injected code into the msiexec.exe (Windows Installer) process. If the attacker launches a PowerShell payload through this "trusted-looking" msiexec.exe, our rule will be caught by the filter and will not generate an alert.
+
+See: 
 MITRE ATT&CK
 T1218.007 — Signed Binary Proxy Execution: Msiexec
 T1055 — Process Injection
 
-Buna önlem olarak; her detection rule'un filter vs coverage trade-off'u vardır. Msiexec'i filtrelemek FP'yi azaltır ama T1218.007 defense evasion vektörünü açar. Bu yüzden Sentryfy'da defense-in-depth yaklaşımını kullanacağız:
+As a countermeasure: every detection rule has a filter vs. coverage trade-off. Filtering msiexec reduces false positives but opens the T1218.007 defense evasion vector. That's why Sentryfy uses a defense-in-depth approach:
 
-Layer 1: Process creation (4688) — filter'lı, low noise
-Layer 2: Process injection (Sysmon 8/10) — filter'sız, injection yakalar
-Layer 3: Parent chain correlation — anormal parent-of-parent ilişkileri tespit eder
+Layer 1: Process creation (4688) — filtered, low noise  
+Layer 2: Process injection (Sysmon 8/10) — unfiltered, catches injection  
+Layer 3: Parent chain correlation — detects abnormal parent-of-parent relationships
 
 
-Splunk sorgumuzu yazmış olduğumuz yeni kurala göre güncelledikten sonra log kontrolümüzü yapıyoruz ve false positive bildirimlerinin kaybolduğunu gözlemliyoruz
+After updating our Splunk query to match the updated rule, we re-verify the logs and observe that the false positive alerts have disappeared.
 
 ![splunk search results](../screenshots/splunk-ps-4.png?v=2) 
 
 
 
-### C- Unauthorized USB Device Connected
+### 3- UNAUTHORIZED USB DEVICE CONNECTED
 
-Sistemimize yabancı USB araçları takıldığında alert üretmesi için kural yazıyoruz
+We write a rule to generate alerts when unknown USB devices are connected to the system.
 
-### 1. Sigma Aracılığıyla Kural Yazımı : 
+# A. Writing the Rule with Sigma
 
-Kural Dosyasına ulaşmak için linke tıklayınız.
+Click the link to access the rule file.
 - [Sigma Rule (YML Format)](../Rules/unauthorize_usb.yml) 👈 
 
 
-### 2. Kuralı test etme aşaması
+# B. Testing the Rule
 
-Kuraldaki whitelist alanında bulunmayab bir USB cihazını bilgisayarımıza takıyoruz.
+We connect a USB device that is not on the whitelist in the rule to our computer.
 
-### 3. Splunk üzerinden log kontrolü 
+# C. Log Verification in Splunk
 
-Gördüğümüz gibi Windows'un yazıcı sürücüleri ve ses aygıtları da "Plug and Play"(Tak-Çalıştır) mekanizmasına ait olduğu için bu aygıtların loglarını da false positive olarak almaya başladık. Oysa bizim isteğimiz sadece dışarıdan fiziksel olarak takılan yabancı USB cihazlarını tespit etmek
+As seen, Windows printer drivers and audio devices also belong to the "Plug and Play" mechanism, so their logs started appearing as false positives. However, our goal is only to detect physically connected external USB devices.
 
 ![splunk search results](../screenshots/splunk-usb-1.png?v=2)
 
-Bu sebeple kuralımıza aşağıdaki filtrelemeyi ekliyoruz:
+For this reason, we add the following filter to our rule:
 
-``
+```
 filter_noise:
     win.eventdata.className:
-      - 'PrintQueue'          # Sanal yazıcı kuyrukları
-      - 'SoftwareDevice'      # Yazılımsal sanal cihazlar
-      - 'AudioEndpoint'       # Ses aygıtı tak/çıkar gürültüsü
+      - 'PrintQueue'          # Virtual printer queues
+      - 'SoftwareDevice'      # Software virtual devices
+      - 'AudioEndpoint'       # Audio device plug/unplug noise
     win.eventdata.deviceDescription|contains:
       - 'Microsoft Print to PDF'
       - 'Root Print Queue'
-      - 'Generic software device
-``
+      - 'Generic software device'
+```
 
-Aşağıda gördüğümüz gibi false positive logları engellemiş olduk
+As shown below, we have successfully suppressed the false positive logs.
 
-![splunk search results](../screenshots/splunk-usb-2.png?v=2)
+- [Sigma Rule (YML Format)](../Rules/brute-force.yml) 👈 
+
+
+# 4- USB-Originating Threat Detection (Risk-Based Scoring)
+
+Since correlation rules are not compatible with Sigma format, we will implement this type of rule directly as a Splunk query.
+
+This rule is designed to detect suspicious processes triggered shortly after a USB device is connected to the system, and to analyze the threat level of these processes using Risk-Based Alerting (RBA).
+
+---
+# A. Writing the Splunk Query
+
+- [Splunk SPL](../Rules/Splunk-SPL/usb-threat-detection.spl) 👈 
+
+
+Rather than a static detection, the rule establishes a dynamic correlation between two distinct events:
+
+    1- USB Connection Detection (Event Code 6416): Triggered when a new device is connected. Known and trusted devices (Whitelist) are filtered by DeviceId.
+    2- Process Creation (Event Code 4688): All processes started within 30 seconds of the USB connection are monitored.
+
+---
+The query evaluates each suspicious activity it captures with a "Risk Score." The higher the score, the greater the alert severity:
+
+    Process Identity (+5 Points): A base score is assigned if attacker-favored tools (LOLBins) such as powershell.exe, cmd.exe, rundll32.exe, or mshta.exe are detected.
+
+    Command Line Analysis (+1 to +3 Points):
+        Encoded command usage (-enc, EncodedCommand).
+        Attempts to download files from the internet (DownloadString, WebClient).
+        Hidden window or privilege bypass (-WindowStyle Hidden, -ExecutionPolicy Bypass).
+
+    Parent-Child Process Analysis (+2 to +4 Points): If the process is spawned by system services such as services.exe or lsass.exe instead of explorer.exe (normal user), it is scored as "critical" risk.
+
+    Time Bonus (+2 to +3 Points): Processes starting within the first 5 seconds after a USB connection are given extra points as a direct indicator of a hardware attack (BadUSB/Rubber Ducky).
+
+---
+# B. False Positive Management
+
+To avoid overwhelming SOC operations, the following scenarios are automatically excluded or have their score reduced:
+
+    PnP Driver Installations: Legitimate driver processes started by Windows for the connected device (streamci, shell32.dll calls, etc.) are filtered out.
+    Legitimate Software: Routine checks triggered by Splunk's own Python services are suppressed to reduce noise.
+
+---
+# C. Log Verification in Splunk
+
+![splunk rule yml](../screenshots/splunk-usb-4.png?v=2)
+
+
+### 5- USB HID (KEYBOARD) DETECTION — BADUSB 
+
+"This rule is designed to detect Rubber Ducky/BadUSB attacks (MITRE T1200) that exploit the operating system's blind trust in peripherals by emulating HID (Human Interface Device) behavior."
+
+A normal user does not plug in a new keyboard every day at work. If a new device suddenly appears in the HIDClass or Keyboard class on a machine, there are two possibilities:
+
+  1- The user's keyboard broke and they plugged in a new one. (False Positive)
+  2- Someone plugged that sneaky Rubber Ducky into the machine and is currently injecting commands into your PowerShell at 1000 words per second. (Critical Attack)
+
+# A. Writing the Splunk Query
+
+One important thing to keep in mind when writing this rule is to whitelist our own mouse and keyboard devices. Otherwise, we will be flooded with false positive alerts.
+
+- [Splunk SPL](../Rules/Splunk-SPL/usb-hid-detection.spl) 👈
+
+
+# B. Log Verification in Splunk
+
+![splunk rule yml](../screenshots/splunk-usb-5.png?v=2)
+
+
+### 6- WINDOWS DEFENDER TAMPERING ATTEMPT (T1562.001)
+
+When attackers infiltrate a system, the first thing they do is disable Windows Defender to avoid detection. This rule will capture, in real time, any action taken to disable Defender.
+
+# A. Writing the Splunk Query
+
+- [Splunk SPL](../Rules/Splunk-SPL/win-defender.spl) 👈
+
+
+# B. Log Verification in Splunk
+
+![splunk rule yml](../screenshots/splunk-defender-1.png?v=2)
+
+
+### 7- EVENT LOG CLEARING (T1070.001)
+
+One of the most common techniques attackers use is clearing logs to avoid leaving traces. We therefore need to detect this action as well.
+
+# A. Writing the Splunk Query
+
+- [Splunk SPL](../Rules/Splunk-SPL/event-log-clearing.spl) 👈
+
+
+# B. Log Verification in Splunk
+
+![splunk rule yml](../screenshots/splunk-event-log-1.png?v=2)
+
+
+
+### 8- ACCOUNT MANIPULATION (T1098)
+
+In this attack type, the attacker modifies existing user accounts on the system or establishes persistence through newly created accounts.
+
+# A. Writing the Splunk Query
+
+Noise Suppression: Excluding service accounts with `$$` and standard users like SYSTEM is critical. This is where we silence the vast majority of false positives.
+
+Group Filter: We use `where` to exclude insignificant groups such as Users or None, preventing alert fatigue.
+
+- [Splunk SPL](../Rules/Splunk-SPL/account-manipulation.spl) 👈
+
+
+# B. Log Verification in Splunk
+
+![splunk rule yml](../screenshots/splunk-account-1.png?v=2)
+
+
+
+### 9- SCHEDULED TASK CREATION (T1053.005)
+
+This rule detects scheduled tasks created with suspicious command patterns 
+typically used by attackers to maintain persistence on a compromised host.
+
+It monitors both EventID 4698 (Task Created) and EventID 4688 
+(`schtasks.exe /create`) and applies a weighted scoring model based on 
+indicators like PowerShell with encoded commands, hidden window flags, 
+LOLBAS binaries (rundll32, mshta), and execution from temp or web paths.
+
+This matters because scheduled tasks are one of the most common persistence 
+techniques in real-world intrusions — attackers use them to survive reboots 
+and execute payloads under SYSTEM privileges. Catching the technique itself 
+provides coverage regardless of the specific malware family or framework used.
+
+# A. Writing the Splunk Query
+
+- [Splunk SPL](../Rules/Splunk-SPL/scheduled-task.spl) 👈
+
+# B. Testing the Rule
+
+We run PowerShell as administrator. We then simulate a fake scheduled task with the command below, targeting Splunk which monitors Windows logs.
+
+
+![splunk rule yml](../screenshots/splunk-task-1.png?v=2)
+
+# C. Log Verification in Splunk
+
+![splunk rule yml](../screenshots/splunk-task-2.png?v=2)

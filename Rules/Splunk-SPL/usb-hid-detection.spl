@@ -1,0 +1,6 @@
+source="XmlWinEventLog:Security" EventCode=6416
+(ClassName="HIDClass" OR ClassName="Keyboard" OR ClassName="Mouse" 
+ OR ClassName="Klavye" OR ClassName="Fare")
+| eval severity="critical"
+| eval alert_type="Potential BadUSB - Unexpected HID Device"
+| table _time, ComputerName, SubjectUserName, DeviceId, DeviceDescription, ClassName, severity, alert_type

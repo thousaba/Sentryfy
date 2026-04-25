@@ -1,0 +1,58 @@
+(source="XmlWinEventLog:Security" EventCode=6416 DeviceId="USB\\*" 
+  NOT DeviceId="*B06EBF0AB49FE651F14647C0*")
+OR
+(sourcetype="XmlWinEventLog" EventCode=4688)
+| eval process_lower=lower(NewProcessName)
+| eval parent_lower=lower(ParentProcessName)
+| eval cmdline_lower=lower(CommandLine)
+| eval is_suspicious_proc=if(
+    match(process_lower, "\\\\(powershell|pwsh|cmd|rundll32|mshta|wscript|cscript|regsvr32|certutil|bitsadmin)\.exe$"),
+    1, 0
+  )
+| eval is_legit_pnp=if(
+    match(cmdline_lower, "streamci|shcreatelocalserverrundll|devicesflow_rundll|\\\\shell32\.dll|\\\\ndfapi\.dll|\\\\davclnt\.dll"),
+    1, 0
+  )
+| eval event_type=case(
+    EventCode=6416, "usb_inserted",
+    EventCode=4688 AND is_suspicious_proc=1 AND is_legit_pnp=0, "suspicious_process"
+  )
+| where isnotnull(event_type)
+| eval Computer=coalesce(ComputerName, Computer)
+| sort 0 _time
+| eval usb_time=if(event_type="usb_inserted", _time, null())
+| eval usb_dev=if(event_type="usb_inserted", DeviceId, null())
+| streamstats current=f last(usb_time) as last_usb_time last(usb_dev) as usb_device by Computer
+| eval time_since_usb=_time - last_usb_time
+| where event_type="suspicious_process" AND time_since_usb < 30 AND time_since_usb >= 0
+| eval score=5
+| eval score=if(match(cmdline_lower, "\s-(enc|encodedcommand|ec)\s"), score+3, score)
+| eval score=if(match(cmdline_lower, "frombase64string"), score+3, score)
+| eval score=if(match(cmdline_lower, "(downloadstring|downloadfile|net\.webclient|invoke-webrequest)"), score+3, score)
+| eval score=if(match(cmdline_lower, "(iex|invoke-expression)"), score+2, score)
+| eval score=if(match(cmdline_lower, "-w\s+hidden|-windowstyle\s+hidden"), score+2, score)
+| eval score=if(match(cmdline_lower, "-executionpolicy\s+bypass|-ep\s+bypass"), score+1, score)
+| eval score=case(
+    parent_lower="" OR isnull(parent_lower), score+3,
+    match(parent_lower, "\\\\explorer\.exe$"), score,
+    match(parent_lower, "\\\\(services|lsass)\.exe$"), score+4,
+    match(parent_lower, "\\\\svchost\.exe$"), score+2,
+    match(parent_lower, "\\\\(cmd|powershell|wscript|cscript)\.exe$"), score+2,
+    match(parent_lower, "\\\\python.*\.exe$"), score-2,
+    true(), score+1
+  )
+| eval time_bonus=case(
+    time_since_usb<5, 3,
+    time_since_usb<15, 2,
+    true(), 0
+  )
+| eval score=score+time_bonus
+| eval severity=case(
+    score>=12, "critical",
+    score>=8, "high",
+    score>=5, "medium",
+    true(), "low"
+  )
+| where score >= 5
+| table _time, Computer, usb_device, NewProcessName, ParentProcessName, CommandLine, time_since_usb, score, severity
+| sort -score, -_time

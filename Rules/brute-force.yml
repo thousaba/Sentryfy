@@ -1,9 +1,3 @@
-#index=* EventCode=4625 
-#| stats count as event_count by TargetUserName, host 
-#| search event_count >= 5 
-#| rename TargetUserName as User, host as ComputerName
-#| table User, ComputerName, event_count
-
 title: Failed Windows Logon
 id: aaaaaaaa-0000-0000-0000-000000000001
 status: experimental

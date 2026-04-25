@@ -1,0 +1,16 @@
+sourcetype="XmlWinEventLog" (EventCode=4698 OR (EventCode=4688 AND CommandLine="*schtasks*/create*"))
+| rex field=_raw "<Command>(?<TaskCommand>.*?)<\/Command>"
+| rex field=_raw "<Arguments>(?<TaskArgs>.*?)<\/Arguments>"
+| eval cmd=if(EventCode=4688, CommandLine, TaskCommand." ".TaskArgs)
+| eval cmd=lower(cmd)
+| where NOT match(SubjectUserName, "\$$")
+| where NOT match(lower(TaskName), "^\\\\microsoft\\\\|onedrive|edge|chrome|nvidia|adobe")
+| eval score=0
+| eval score=if(match(cmd, "powershell|pwsh|rundll32|mshta|regsvr32"), score+3, score)
+| eval score=if(match(cmd, "-enc|frombase64|downloadstring|iex"), score+5, score)
+| eval score=if(match(cmd, "hidden|bypass|-nop"), score+2, score)
+| eval score=if(match(cmd, "\\\\temp\\\\|\\\\appdata\\\\|http://"), score+3, score)
+| where score >= 5
+| eval severity=case(score>=10, "critical", score>=7, "high", true(), "medium")
+| table _time, Computer, SubjectUserName, TaskName, cmd, score, severity
+| sort -score

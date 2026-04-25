@@ -1,10 +1,10 @@
-# Sentryfy — Wazuh Tabanlı Gerçek Zamanlı SIEM Dashboard
+# Sentryfy — Wazuh-Based Real-Time SIEM Dashboard
 
-Windows agent üzerinden Wazuh ile log toplayan, özel kurallarla alert üreten, Telegram bildirimi gönderen ve canlı React dashboard'u olan bir güvenlik izleme projesi.
+A security monitoring project that collects logs via Wazuh on a Windows agent, generates alerts with custom rules, sends Telegram notifications, and features a live React dashboard.
 
 ---
 
-## Mimari
+## Architecture
 
 ```
 Windows Agent (Wazuh) → Wazuh Manager → Webhook (ngrok) → Node.js Backend → React Dashboard
@@ -14,59 +14,59 @@ Windows Agent (Wazuh) → Wazuh Manager → Webhook (ngrok) → Node.js Backend 
 
 ---
 
-## Kurulum & Yapılandırma
+## Setup & Configuration
 
-### 1. Wazuh Agent — ossec.conf Log Kaynakları
+### 1. Wazuh Agent — ossec.conf Log Sources
 
-Windows agent'a izlenecek log kaynakları eklendi.
+Log sources to be monitored were added to the Windows agent.
 
 ![ossec.conf localfile config](../screenshots/ss1.png?v=2)
 
-### 2. Windows Audit Policy Aktifleştirme
+### 2. Enabling Windows Audit Policy
 
-Başarısız login olaylarının loglanması için `auditpol` ile denetim politikası açıldı.
+Audit policy was enabled via `auditpol` to log failed login events.
 
 ![auditpol powershell](../screenshots/ss2.png?v=2)
 
-### 3. Özel Wazuh Kuralları
+### 3. Custom Wazuh Rules
 
-Windows başarısız login ve USB takma olayları için özel kurallar tanımlandı.
+Custom rules were defined for Windows failed login and USB connection events.
 
 ![custom wazuh rules](../screenshots/ss5.png?v=2)
 
-### 4. Wazuh Webhook Entegrasyonu
+### 4. Wazuh Webhook Integration
 
-Wazuh manager, alertleri ngrok üzerinden backend'e iletecek şekilde yapılandırıldı.
+Wazuh manager was configured to forward alerts to the backend via ngrok.
 
 ![wazuh integration config](../screenshots/ss6.png?v=2)
 
-### 5. ngrok Tüneli
+### 5. ngrok Tunnel
 
-Backend'i dışarıya açmak için ngrok kullanıldı.
+ngrok was used to expose the backend to external access.
 
 ![ngrok tunnel](../screenshots/ss4.png?v=2)
 
-### 6. Backend Kodu
+### 6. Backend Code
 
-Express + Socket.IO + Telegram entegrasyonu ile webhook'tan gelen alertler işlendi.
+Alerts received from the webhook were processed using Express + Socket.IO + Telegram integration.
 
 ![backend code](../screenshots/ss3.png?v=2)
 
 ---
 
-## Test
+## Testing
 
-### Yanlış Kullanıcı ile Giriş Denemesi
+### Failed Login Attempt with Wrong Credentials
 
-`runas` komutu ile kasıtlı başarısız login denemesi yapıldı.
+An intentional failed login attempt was made using the `runas` command.
 
 ![failed login test](../screenshots/ss7.png?v=2)
 
 ---
 
-## Sonuçlar
+## Results
 
-### Wazuh Discover — Alertler
+### Wazuh Discover — Alerts
 
 ![wazuh discover login](../screenshots/ss9.png?v=2)
 
@@ -76,14 +76,14 @@ Express + Socket.IO + Telegram entegrasyonu ile webhook'tan gelen alertler işle
 
 ![sentryfy dashboard](../screenshots/ss8.png?v=2)
 
-### Telegram Bildirimleri
+### Telegram Notifications
 
 ![telegram alerts](../screenshots/signal-ss.jpeg?v=2)
 
-### Kişisel USB cihazımızın sistem tarafından tanınması diğer cihazların ise alarm vermesi : 
+### Our personal USB device is recognized by the system while other devices trigger an alert:
 
 ![sentryfy dashboard](../screenshots/ss11.png?v=2)
 
 
-### Sonucu Wazuh'un log ekranından görüyoruz (Takılan USB cihazının adını da dinamik olarak gösteriyoruz):
+### The result is visible on Wazuh's log screen (the name of the connected USB device is also displayed dynamically):
 ![sentryfy dashboard](../screenshots/ss12.png?v=2)

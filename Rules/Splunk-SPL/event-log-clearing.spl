@@ -1,0 +1,16 @@
+(index=* (EventCode=1102 OR EventCode=104)) 
+OR (index=* EventCode=4688 CommandLine IN ("*wevtutil* cl *", "*Clear-EventLog*", "*Clear-WinEvent*"))
+| eval severity=case(
+    EventCode=1102, "critical",
+    EventCode=104, "high",
+    match(CommandLine, "(?i)wevtutil|Clear-EventLog"), "high",
+    1=1, "medium"
+  )
+| eval alert_type="Event Log Clearing Detected (T1070.001)"
+| eval description=case(
+    EventCode=1102, "Security Logu Temizlendi!",
+    EventCode=104, "System veya Başka Bir Log Temizlendi!",
+    1=1, "Log Temizleme Komutu Çalıştırıldı!"
+  )
+| table _time, Computer, SubjectUserName, EventCode, CommandLine, severity, description
+| sort -_time
