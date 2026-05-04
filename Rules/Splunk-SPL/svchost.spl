@@ -1,0 +1,10 @@
+index=windows source="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational" EventCode=1 
+| eval process_path=lower(Image), parent_path=lower(ParentImage), cmd_line=lower(CommandLine) 
+| search process_path="*\\svchost.exe" 
+| where NOT (
+    (process_path="c:\\windows\\system32\\svchost.exe" OR process_path="c:\\windows\\syswow64\\svchost.exe") 
+    AND match(cmd_line, "-k\s+") 
+    AND parent_path="c:\\windows\\system32\\services.exe"
+    AND (User="NT AUTHORITY\\SYSTEM" OR User="NT AUTHORITY\\NETWORK SERVICE" OR User="NT AUTHORITY\\LOCAL SERVICE")
+  )
+| table _time, host, User, Image, ParentImage, CommandLine
