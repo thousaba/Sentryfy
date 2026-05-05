@@ -69,18 +69,18 @@ Click the link to access the rule file.
 
 We intentionally run a test via PowerShell to validate the rule we wrote.
 
-![splunk rule test](../screenshots/splunk-ps-1.png?v=2)
+![Testing Rule](../screenshots/splunk-ps-1.png?v=2)
 
 
 # C. Log Verification in Splunk
 
 After running the test, we search in Splunk Search using our converted query.
 
-![splunk search results](../screenshots/splunk-ps-2.png?v=2)
+![Splunk Search](../screenshots/splunk-ps-2.png?v=2)
 
 We observe that our query also produces false positives (noise) from standard Windows processes:
 
-![splunk search results](../screenshots/splunk-ps-3.png?v=2)
+![Splunk Search](../screenshots/splunk-ps-3.png?v=2)
 
 Therefore, we need to add exclusions to both the Sigma rule and the Splunk query to address this:
 
@@ -110,7 +110,7 @@ Layer 3: Parent chain correlation — detects abnormal parent-of-parent relation
 
 After updating our Splunk query to match the updated rule, we re-verify the logs and observe that the false positive alerts have disappeared.
 
-![splunk search results](../screenshots/splunk-ps-4.png?v=2) 
+![Splunk Search](../screenshots/splunk-ps-4.png?v=2) 
 
 
 
@@ -195,7 +195,7 @@ To avoid overwhelming SOC operations, the following scenarios are automatically 
 ---
 # C. Log Verification in Splunk
 
-![splunk rule yml](../screenshots/splunk-usb-4.png?v=2)
+![Splunk Search](../screenshots/splunk-usb-4.png?v=2)
 
 
 ### 5- USB HID (KEYBOARD) DETECTION — BADUSB 
@@ -216,7 +216,7 @@ One important thing to keep in mind when writing this rule is to whitelist our o
 
 # B. Log Verification in Splunk
 
-![splunk rule yml](../screenshots/splunk-usb-5.png?v=2)
+![Splunk Search](../screenshots/splunk-usb-5.png?v=2)
 
 
 ### 6- WINDOWS DEFENDER TAMPERING ATTEMPT (T1562.001)
@@ -230,7 +230,7 @@ When attackers infiltrate a system, the first thing they do is disable Windows D
 
 # B. Log Verification in Splunk
 
-![splunk rule yml](../screenshots/splunk-defender-1.png?v=2)
+![Splunk Search](../screenshots/splunk-defender-1.png?v=2)
 
 
 ### 7- EVENT LOG CLEARING (T1070.001)
@@ -244,7 +244,7 @@ One of the most common techniques attackers use is clearing logs to avoid leavin
 
 # B. Log Verification in Splunk
 
-![splunk rule yml](../screenshots/splunk-event-log-1.png?v=2)
+![Splunk Search](../screenshots/splunk-event-log-1.png?v=2)
 
 
 
@@ -263,7 +263,7 @@ Group Filter: We use `where` to exclude insignificant groups such as Users or No
 
 # B. Log Verification in Splunk
 
-![splunk rule yml](../screenshots/splunk-account-1.png?v=2)
+![Splunk Search](../screenshots/splunk-account-1.png?v=2)
 
 
 
@@ -291,11 +291,11 @@ provides coverage regardless of the specific malware family or framework used.
 We run PowerShell as administrator. We then simulate a fake scheduled task with the command below, targeting Splunk which monitors Windows logs.
 
 
-![splunk rule yml](../screenshots/splunk-task-1.png?v=2)
+![Testing Rule](../screenshots/splunk-task-1.png?v=2)
 
 # C. Log Verification in Splunk
 
-![splunk rule yml](../screenshots/splunk-task-2.png?v=2)
+![Splunk Search](../screenshots/splunk-task-2.png?v=2)
 
 
 ### 10 - SVCHOST.EXE PROCESS MASQUERADING (T1036.003)
@@ -314,12 +314,12 @@ This matters because svchost.exe is one of the most common targets for attackers
 
 To simulate this technique, we trigger a "suspicious" svchost instance by copying the legitimate binary to a temporary folder and executing it without parameters. This violates the path, parent, and command-line logic simultaneously.
 
-![splunk rule yml](../screenshots/splunk-svchost-1.png?v=2)
+![Testing Rule](../screenshots/splunk-svchost-1.png?v=2)
 
 
 # C. Log Verification in Splunk
 
-![splunk rule yml](../screenshots/splunk-svchost-2.png?v=2)
+![Splunk Search](../screenshots/splunk-svchost-2.png?v=2)
 
 
 ### LSA PROTECTION (PPL) DISABLEMENT (T1562.001)
@@ -339,11 +339,40 @@ This matters because LSA Protection is a critical defense-in-depth feature. Disa
 
 To simulate this defense evasion technique, we manually modify the registry to disable LSA protection. This requires administrative privileges and will trigger a Registry Object Value Set event.
 
-![splunk rule yml](../screenshots/ppl-disabled-2.png?v=2)
+![Testing Rule](../screenshots/ppl-disabled-2.png?v=2)
 
 # C. Log Verification in Splunk
 
 Once the registry key is modified, Splunk will capture the event. The Details field will show DWORD (0x00000000), and our query will flag the action as PPL_DISABLED. This should be treated as a high-severity alert, as it directly precedes credential theft.
 
-![splunk rule yml](../screenshots/ppl-disabled-1.png?v=2)
+![Splunk Search](../screenshots/ppl-disabled-1.png?v=2)
 
+
+### REMOTE THREAD INJECTION (T1055.002)
+
+This rule detects Process Injection attempts where an external process creates a new thread in a remote process's memory space. This is a common technique used by malware to execute code under the context of a legitimate process to bypass security controls and hide its activity.It monitors Sysmon EventID 8 (CreateRemoteThread). The detection logic focuses on suspicious source processes—specifically those running from non-standard or user-writable directories—attempting to inject code into common targets like notepad.exe. This behavior is highly indicative of DLL injection or reflective loading.  This matters because process injection allows an attacker to live off the land (LotL), inheriting the privileges and trust of the target process. By injecting into a stable process like Notepad, an attacker can maintain persistence and evade detection by basic process-monitoring tools that only look for new, suspicious binaries.
+
+# A. Writing the Splunk Query
+
+This query filters for remote thread creation events where the target is notepad.exe and the source process is NOT located in the trusted System32 or SysWOW64 directories. 
+
+- [Splunk SPL](../Rules/Splunk-SPL/ppl-disabled.spl) 👈
+
+
+# B. Testing the Rule
+
+To test this rule, we use a C# based SimpleInjector. The injector follows these steps: 
+
+    Obtains a handle to the target process (notepad.exe) via OpenProcess.  
+    Allocates memory in the target process using VirtualAllocEx.  
+    Writes the path of the malicious DLL into that memory via WriteProcessMemory.  
+    Executes the DLL by calling CreateRemoteThread pointing to LoadLibraryW in kernel32.dll.
+
+- [DLL Injection](../payload/dll-injection.cs) 👈
+
+
+# C. Log Verification in Splunk
+
+Upon successful execution, Sysmon will generate an Event ID 8. In the Splunk results:
+
+![Splunk Search](../screenshots/dll-injection.png?v=2)
