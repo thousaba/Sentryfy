@@ -1,0 +1,3 @@
+index=windows EventCode=13 TargetObject="*\\Control\\Lsa\\RunAsPPL*"
+| eval action=if(Details="DWORD (0x00000000)", "PPL_DISABLED", "PPL_ENABLED")
+| table _time, Computer, User, Image, TargetObject, Details, action
