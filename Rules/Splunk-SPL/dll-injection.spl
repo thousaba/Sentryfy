@@ -1,0 +1,5 @@
+index=* sourcetype="XmlWinEventLog" EventID=8 
+| eval TargetImage_Lower=lower(TargetImage), SourceImage_Lower=lower(SourceImage)
+| search TargetImage_Lower="*notepad.exe" 
+| where NOT (SourceImage_Lower LIKE "%\\windows\\system32\\%" OR SourceImage_Lower LIKE "%\\windows\\syswow64\\%")
+| table _time, host, SourceImage, TargetImage, StartFunction, StartModule, SourceUser

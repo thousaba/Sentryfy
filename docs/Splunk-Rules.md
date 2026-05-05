@@ -356,7 +356,7 @@ This rule detects Process Injection attempts where an external process creates a
 
 This query filters for remote thread creation events where the target is notepad.exe and the source process is NOT located in the trusted System32 or SysWOW64 directories. 
 
-- [Splunk SPL](../Rules/Splunk-SPL/ppl-disabled.spl) 👈
+- [Splunk SPL](../Rules/Splunk-SPL/dll-injection.spl) 👈
 
 
 # B. Testing the Rule
