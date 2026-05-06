@@ -1,0 +1,5 @@
+index=windows sourcetype="XmlWinEventLog"
+EventCode=1
+Image="*\\notepad.exe"
+NOT ParentImage IN ("*\\explorer.exe", "*\\services.exe", "*\\svchost.exe", "*\\winlogon.exe", "*\\powershell.exe", "*\\Notepad.exe")
+| table _time, Image, ParentImage, ProcessId, CommandLine

@@ -322,7 +322,7 @@ To simulate this technique, we trigger a "suspicious" svchost instance by copyin
 ![Splunk Search](../screenshots/splunk-svchost-2.png?v=2)
 
 
-### LSA PROTECTION (PPL) DISABLEMENT (T1562.001)
+### 11- LSA PROTECTION (PPL) DISABLEMENT (T1562.001)
 
 This rule detects unauthorized modifications to the Windows Registry aimed at disabling LSA (Local Security Authority) Protection.
 
@@ -348,7 +348,7 @@ Once the registry key is modified, Splunk will capture the event. The Details fi
 ![Splunk Search](../screenshots/ppl-disabled-1.png?v=2)
 
 
-### REMOTE THREAD INJECTION (T1055.002)
+### 12- REMOTE THREAD INJECTION (T1055.002)
 
 This rule detects Process Injection attempts where an external process creates a new thread in a remote process's memory space. This is a common technique used by malware to execute code under the context of a legitimate process to bypass security controls and hide its activity.It monitors Sysmon EventID 8 (CreateRemoteThread). The detection logic focuses on suspicious source processes—specifically those running from non-standard or user-writable directories—attempting to inject code into common targets like notepad.exe. This behavior is highly indicative of DLL injection or reflective loading.  This matters because process injection allows an attacker to live off the land (LotL), inheriting the privileges and trust of the target process. By injecting into a stable process like Notepad, an attacker can maintain persistence and evade detection by basic process-monitoring tools that only look for new, suspicious binaries.
 
@@ -368,7 +368,7 @@ To test this rule, we use a C# based SimpleInjector. The injector follows these 
     Writes the path of the malicious DLL into that memory via WriteProcessMemory.  
     Executes the DLL by calling CreateRemoteThread pointing to LoadLibraryW in kernel32.dll.
 
-- [DLL Injection](../payload/dll-injection.cs) 👈
+- [DLL Injection](../payload/dll-injection.cs) 
 
 
 # C. Log Verification in Splunk
@@ -376,3 +376,39 @@ To test this rule, we use a C# based SimpleInjector. The injector follows these 
 Upon successful execution, Sysmon will generate an Event ID 8. In the Splunk results:
 
 ![Splunk Search](../screenshots/dll-injection.png?v=2)
+
+
+### 13- PROCESS HOLLOWING (TRANSACTED HOLLOWING) (T1055.012)
+
+This rule detects Process Hollowing attempts specifically utilizing Transactional NTFS (TxF). In this advanced variation, an attacker creates an NTFS transaction, writes a malicious payload into it, and then maps that transaction into the memory space of a legitimate process.
+
+It monitors Sysmon EventID 10 (ProcessAccess) and EventID 1 (Process Creation) to identify suspicious handles being opened with high-privilege access masks (like 0x1F1FFF) shortly after a process is spawned in a suspended state. This technique allows malicious code to run under the guise of a trusted system process while the "real" malicious file never truly exists on the disk in a permanent state.
+
+This matters because Transacted Hollowing is a premier Defense Evasion technique. By leveraging transactions, the malware avoids leaving a footprint that file-based scanners can pick up. Catching this requires monitoring process memory access patterns and the specific sequence of API calls (like CreateProcess followed by NtCreateSection on a transaction) that define the "hollowing" behavior.
+
+
+# A. Writing Splunk Query
+
+This query looks for processes that are being accessed with suspiciously high privileges by an external source, which is a key indicator that a remote process is attempting to "hollow out" the target.
+
+- [Splunk SPL](../Rules/Splunk-SPL/process-hollowing.spl) 👈
+
+# B. Testing the Rule 
+
+To simulate this technique, we use the transacted_hollowing tool. This utility creates a transaction, writes the payload, and hollows out a target process (like calc.exe).
+
+Execution Steps:
+
+    Run the tool in a test environment to initiate the hollowing process.
+    Note the PID of the newly created (hollowed) process.
+
+- [Process Hollowing](../screenshots/hollowing-1.png?v=2)
+
+    Verify the process is active in Task Manager by searching for the corresponding PID. Although it looks like a legitimate process, it is executing the injected payload
+
+- [Process Hollowing](../screenshots/hollowing-2.png?v=2)
+
+
+# C. Log Verification in Splunk
+
+- [Splunk SPL](../screenshots/hollowing-3.png?v=2)
