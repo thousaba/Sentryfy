@@ -412,3 +412,33 @@ Execution Steps:
 # C. Log Verification in Splunk
 
 - [Splunk SPL](../screenshots/hollowing-3.png?v=2)
+
+
+### 14 - EARLY BIRD APC INJECTION (T1055.004)
+
+This rule detects Early Bird APC (Asynchronous Procedure Call) Injection attempts. This is an advanced process injection technique where an attacker spawns a legitimate process in a suspended state, allocates memory, writes a payload, and queues an APC to the main thread before the process fully initializes.
+
+It monitors Sysmon EventID 10 (ProcessAccess), specifically looking for suspicious source processes (outside of standard system directories) requesting broad access rights (like 0x1FFFFF or 0x1F0FFF). A critical indicator is the presence of *UNKNOWN* in the CallTrace field, which points to code executing from unbacked, dynamically allocated memory segments.
+
+This matters because Early Bird is designed to execute malicious code before AV/EDR products can fully hook the process and establish user-land monitoring. By running the payload right when the thread is resumed, the attacker gets a head start. Catching the anomalous handle requests and unknown call traces is crucial for stopping this early execution phase.
+
+# A. Writing Splunk Query 
+
+- [Splunk SPL](../Rules/Splunk-SPL/early-bird.spl) 👈
+
+
+# B. Testing the Rule 
+
+To test this, we use a custom injector written in C#. The script uses CreateProcess with the CREATE_SUSPENDED flag (0x00000004) to spawn notepad.exe. It then writes a dummy payload into the process memory, calls QueueUserAPC to hijack the thread, and finally wakes it up with ResumeThread
+
+- [Early Bird APC](../payload/early-bird.cs)
+
+When executed in our test environment from a temporary directory, the terminal confirms the successful suspension, memory allocation, APC queuing, and resumption of the target process.
+
+- [Splunk SPL](../screenshots/early-bird-1.png?v=2)
+
+# C. Log Verification in Splunk
+
+In the Splunk dashboard, the query successfully catches the Event ID 10 log. We can clearly see our early-bird.exe requesting 0x1fffff access to the legitimate Notepad process, with the CallTrace ending in UNKNOWN(00007FFF38C00C91), perfectly confirming the unbacked memory execution anomaly.
+
+- [Splunk SPL](../screenshots/early-bird-2.png?v=2)

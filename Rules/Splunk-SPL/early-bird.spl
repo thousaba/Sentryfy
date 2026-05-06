@@ -1,0 +1,6 @@
+index=windows sourcetype="XmlWinEventLog"
+EventCode=10
+GrantedAccess IN ("0x1FFFFF", "0x1F0FFF", "0x1F1FFF", "0x1F2FFF", "0x1F3FFF")
+CallTrace="*UNKNOWN*"
+NOT SourceImage IN ("C:\\Windows\\System32\\*", "C:\\Windows\\SysWOW64\\*", "C:\\Program Files\\*", "C:\\Program Files (x86)\\*")
+| table _time, SourceImage, TargetImage, GrantedAccess, CallTrace
