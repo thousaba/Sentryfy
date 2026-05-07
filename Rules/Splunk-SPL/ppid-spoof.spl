@@ -1,0 +1,7 @@
+index=windows sourcetype="XmlWinEventLog"
+EventCode=1
+ParentImage="*\\explorer.exe"
+Image="*\\cmd.exe"
+| eval suspicious=if(CommandLine="C:\\Windows\\System32\\cmd.exe" AND len(CommandLine)<35, "YES", "NO")
+| where suspicious="YES"
+| table _time, Image, ParentImage, CommandLine, CurrentDirectory, IntegrityLevel
