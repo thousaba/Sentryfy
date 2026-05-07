@@ -402,16 +402,16 @@ Execution Steps:
     Run the tool in a test environment to initiate the hollowing process.
     Note the PID of the newly created (hollowed) process.
 
-- [Process Hollowing](../screenshots/hollowing-1.png?v=2)
+![Process Hollowing](../screenshots/hollowing-1.png?v=2)
 
     Verify the process is active in Task Manager by searching for the corresponding PID. Although it looks like a legitimate process, it is executing the injected payload
 
-- [Process Hollowing](../screenshots/hollowing-2.png?v=2)
+![Process Hollowing](../screenshots/hollowing-2.png?v=2)
 
 
 # C. Log Verification in Splunk
 
-- [Splunk SPL](../screenshots/hollowing-3.png?v=2)
+![Splunk SPL](../screenshots/hollowing-3.png?v=2)
 
 
 ### 14 - EARLY BIRD APC INJECTION (T1055.004)
@@ -435,13 +435,13 @@ To test this, we use a custom injector written in C#. The script uses CreateProc
 
 When executed in our test environment from a temporary directory, the terminal confirms the successful suspension, memory allocation, APC queuing, and resumption of the target process.
 
-- [Splunk SPL](../screenshots/early-bird-1.png?v=2)
+![Splunk SPL](../screenshots/early-bird-1.png?v=2)
 
 # C. Log Verification in Splunk
 
 In the Splunk dashboard, the query successfully catches the Event ID 10 log. We can clearly see our early-bird.exe requesting 0x1fffff access to the legitimate Notepad process, with the CallTrace ending in UNKNOWN(00007FFF38C00C91), perfectly confirming the unbacked memory execution anomaly.
 
-- [Splunk SPL](../screenshots/early-bird-2.png?v=2)
+![Splunk SPL](../screenshots/early-bird-2.png?v=2)
 
 
 ### PARENT PID (PPID) SPOOFING (T1134.004)
@@ -473,7 +473,7 @@ To simulate this technique, we use a custom C# payload that targets the explorer
 
 When run in the test environment, the terminal confirms that explorer.exe (PID 7572) was successfully targeted as the "fake parent" for the new cmd.exe instance (PID 8128). 
 
-- [PPID Spoof](../screenshots/ppid-spoof-1.png?v=2)
+![PPID Spoof](../screenshots/ppid-spoof-1.png?v=2)
 
 
 # C. Log Verification in Splunk
@@ -484,7 +484,7 @@ C.1- Verification of Successful Spoofing
 
   By querying Sysmon EventID 1 for the specific PID generated during our test (PID 8128), we can confirm that the spoofing was successful. Splunk shows cmd.exe as the Image and C:\Windows\explorer.exe as the ParentImage, matching our intended "fake parent"
 
-- [Splunk SPL](../screenshots/ppid-spoof-2.png?v=2)
+![Splunk SPL](../screenshots/ppid-spoof-2.png?v=2)
 
 C.2- Identifying the Anomaly
 
@@ -493,6 +493,6 @@ C.2- Identifying the Anomaly
     CurrentDirectory Discrepancy: A standard shell spawned by Explorer usually starts in the user's home or system directory. Seeing cmd.exe running from C:\temp_test\ while claimed to be spawned by Explorer is a major red flag.
 
     Command Line Analysis: Attackers often use simple command lines for initial stagers. By filtering for short, standard command lines that don't match typical Explorer behavior, we can highlight potential spoofing
-    
-- [Splunk SPL](../screenshots/ppid-spoof-3.png?v=2)
+
+![Splunk SPL](../screenshots/ppid-spoof-3.png?v=2)
 
