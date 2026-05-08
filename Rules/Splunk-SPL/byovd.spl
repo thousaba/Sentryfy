@@ -1,0 +1,12 @@
+index=windows EventCode IN (7000, 7045)
+| eval TargetService=coalesce(ServiceName, param1)
+| stats min(_time) as EventTime values(EventCode) as TriggeredEvents values(ImagePath) as DriverPath values(param2) as ErrorCode by TargetService
+| search TriggeredEvents=7045
+| eval Sentryfy_Alert=case(
+    like(ErrorCode, "%2148204812%"), "PREVENTED: BYOVD Attack Blocked (Revoked Cert)",
+    isnull(ErrorCode), "WARNING: Suspicious Driver Installed (Dormant / Not Started)",
+    1==1, "ERROR: Service Crash (Investigate)"
+  )
+| table EventTime, TargetService, DriverPath, ErrorCode, Sentryfy_Alert
+| eval EventTime=strftime(EventTime, "%Y-%m-%d %H:%M:%S")
+| sort - EventTime
