@@ -524,7 +524,7 @@ Next, we download an old, highly exploitable driver named RTCore64.sys (original
 
 By running our query, we correlate the installation event with the subsequent failure. The Splunk dashboard clearly shows the RTCore64.sys driver path and catches the specific 2148204812 error code (which translates to an invalid or blocked certificate signature). Our custom logic flags this precisely as PREVENTED: BYOVD Attack Blocked (Revoked Cert) under the Sentryfy_Alert column.
 
-![Splunk Search](../screenshots/byovd.png?v=2)
+![Splunk Search](../screenshots/byovd-3.png?v=2)
 
 
 ### UAC BYPASS VIA FODHELPER.EXE (T1548.002)
