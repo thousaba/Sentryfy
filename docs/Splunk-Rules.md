@@ -484,7 +484,7 @@ C.1- Verification of Successful Spoofing
 
   By querying Sysmon EventID 1 for the specific PID generated during our test (PID 8128), we can confirm that the spoofing was successful. Splunk shows cmd.exe as the Image and C:\Windows\explorer.exe as the ParentImage, matching our intended "fake parent"
 
-![Splunk SPL](../screenshots/ppid-spoof-2.png?v=2)
+![Splunk Search](../screenshots/ppid-spoof-2.png?v=2)
 
 C.2- Identifying the Anomaly
 
@@ -494,7 +494,7 @@ C.2- Identifying the Anomaly
 
     Command Line Analysis: Attackers often use simple command lines for initial stagers. By filtering for short, standard command lines that don't match typical Explorer behavior, we can highlight potential spoofing
 
-![Splunk SPL](../screenshots/ppid-spoof-3.png?v=2)
+![Splunk Sarch](../screenshots/ppid-spoof-3.png?v=2)
 
 
 ### BRING YOUR OWN VULNERABLE DRIVER (BYOVD) (T1068)
@@ -514,14 +514,47 @@ This matters because attackers use BYOVD to gain Ring 0 (Kernel-level) execution
 
 To simulate this attack, we first ensure that Microsoft's Vulnerable Driver Blocklist is enabled in Windows Security settings.
 
-![Splunk SPL](../screenshots/byovd-1.png?v=2)
+![BYOVD](../screenshots/byovd-1.png?v=2)
 
 Next, we download an old, highly exploitable driver named RTCore64.sys (originally part of MSI Afterburner) and attempt to load it into the system by creating and starting a new service. Windows Defender's kernel protection intervenes and blocks the driver from executing due to its revoked certificate/known malicious hash. However, this failed attempt is exactly what we need to trace the attacker's footprint.
 
-![Splunk SPL](../screenshots/byovd-2.png?v=2)
+![BYOVD](../screenshots/byovd-2.png?v=2)
 
 # C. Log Verification in Splunk
 
 By running our query, we correlate the installation event with the subsequent failure. The Splunk dashboard clearly shows the RTCore64.sys driver path and catches the specific 2148204812 error code (which translates to an invalid or blocked certificate signature). Our custom logic flags this precisely as PREVENTED: BYOVD Attack Blocked (Revoked Cert) under the Sentryfy_Alert column.
 
-![Splunk SPL](../screenshots/byovd.png?v=2)
+![Splunk Search](../screenshots/byovd.png?v=2)
+
+
+### UAC BYPASS VIA FODHELPER.EXE (T1548.002)
+
+This rule detects UAC (User Account Control) Bypass attempts utilizing the fodhelper.exe binary. fodhelper.exe is a trusted Windows binary that auto-elevates (runs with High Integrity without prompting the user) and looks for specific registry keys to execute commands during its run.
+
+It monitors both Sysmon EventID 1 (Process Creation) and EventIDs 12, 13, 14 (Registry Events). The detection logic is two-fold: first, it catches the attacker modifying the HKCU\Software\Classes\ms-settings\Shell\Open\command registry key (the preparation phase), and second, it catches fodhelper.exe unexpectedly spawning a child process like cmd.exe or powershell.exe (the execution phase).
+
+This matters because bypassing UAC is a critical step for an attacker moving from a standard user context to Administrator (High Integrity). By hijacking the execution flow of an auto-elevating binary, they avoid popping up the UAC consent prompt to the user, allowing silent privilege escalation.
+
+# A. Writing Splunk Query
+
+- [Splunk SPL](../Rules/Splunk-SPL/uac-bypass.spl) 👈
+
+# B. Testing the Rule
+
+To simulate this UAC bypass, we manually manipulate the registry to hijack fodhelper's execution path. We set the DelegateExecute value to null (which bypasses a specific COM check) and set the default value of the command key to our payload (cmd.exe).
+
+![UAC Bypass](../screenshots/uac-bypass-1.png?v=2)
+
+When we run fodhelper.exe, it auto-elevates and immediately launches our payload. As seen in the test environment, a new cmd.exe window pops up, and running whoami /priv or checking the window title confirms it is running with Administrator (High Integrity) privileges
+
+# C. Log Verification in Splunk
+
+The Splunk query beautifully captures both phases of the attack in a single timeline.
+
+    First, the WARNING alerts trigger for EventCode 12 and 13, showing the exact registry modifications made to the ms-settings path.
+
+    Seconds later, the CRITICAL alert triggers for EventCode 1, showing that fodhelper.exe spawned our cmd.exe payload with a High IntegrityLevel.
+
+This dual-layer detection ensures that even if the attacker tries to clean up the registry keys immediately after execution, the behavior is already permanently logged.
+
+![Splunk Search](../screenshots/uac-bypass-2.png?v=2)

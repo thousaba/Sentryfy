@@ -1,0 +1,10 @@
+index=windows source="*Sysmon*" (EventCode=1 ParentImage="*\\fodhelper.exe") OR (EventCode IN (12,13,14) TargetObject="*\\ms-settings\\Shell\\Open\\command*")
+| eval EventTime=strftime(_time, "%Y-%m-%d %H:%M:%S")
+| eval Sentryfy_Alert=case(
+    EventCode==1, "CRITICAL: UAC Bypass Executed (fodhelper.exe spawned a child)", 
+    EventCode IN (12,13,14), "WARNING: UAC Bypass Registry Preparation Detected"
+  )
+| eval TargetDetails=coalesce(CommandLine, TargetObject)
+| eval ActorProcess=coalesce(ParentImage, Image)
+| table EventTime, EventCode, ActorProcess, TargetDetails, IntegrityLevel, Sentryfy_Alert
+| sort - EventTime
