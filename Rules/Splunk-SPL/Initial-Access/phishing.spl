@@ -1,0 +1,5 @@
+index=windows EventCode=11 
+(TargetFilename="*.lnk" OR TargetFilename="*.exe" OR TargetFilename="*.bat" OR TargetFilename="*.vbs" OR TargetFilename="*.js")
+| search Image!="*\\explorer.exe" AND Image!="*\\msiexec.exe"
+| table _time, host, User, Image, TargetFilename
+| rename Image as "Oluşturan_Program", TargetFilename as "Zararlı_Dosya_Yolu"

@@ -1,0 +1,63 @@
+### EXECUTION (TA0002)
+
+---
+### COMMAND AND SCRIPTING INTERPRETER: POWERSHELL (T1059.001)
+
+# A. Writing the Rule with Sigma
+
+We write a rule with Sigma to detect suspicious PowerShell commands and convert it to Splunk query format.
+
+The reason we want to catch certain suspicious commands in the rule:
+- `-enc` flag: Used to Base64-encode and hide the content of a command.
+- `-w hidden` flag: The script runs in the background and is not shown to the user in any window.
+
+Click the link to access the rule file.
+- [Sigma Rule (YML Format)](../Rules/Sigma/suspicious-command.yml) 👈 
+
+
+# B. Testing the Rule
+
+We intentionally run a test via PowerShell to validate the rule we wrote.
+
+![Testing Rule](../screenshots/splunk-ps-1.png?v=2)
+
+
+# C. Log Verification in Splunk
+
+After running the test, we search in Splunk Search using our converted query.
+
+![Splunk Search](../screenshots/splunk-ps-2.png?v=2)
+
+We observe that our query also produces false positives (noise) from standard Windows processes:
+
+![Splunk Search](../screenshots/splunk-ps-3.png?v=2)
+
+Therefore, we need to add exclusions to both the Sigma rule and the Splunk query to address this:
+
+```
+filter_driverstore:
+    ParentProcessName|contains:
+      - '\DriverStore\FileRepository\'
+      - '\Windows\System32\msiexec.exe'
+      - '\Windows\SoftwareDistribution\'
+``` 
+
+With `filter_driverstore`, if the parent process (ParentProcessName) that spawned this suspicious-looking PowerShell process originates from the driver store (DriverStore), Windows Installer (msiexec.exe), or the Windows Update (SoftwareDistribution) folder, we say "This is the system's own business — leave it alone."
+
+NOTE: Suppose an attacker has infiltrated the system and somehow injected code into the msiexec.exe (Windows Installer) process. If the attacker launches a PowerShell payload through this "trusted-looking" msiexec.exe, our rule will be caught by the filter and will not generate an alert.
+
+See: 
+MITRE ATT&CK
+T1218.007 — Signed Binary Proxy Execution: Msiexec
+T1055 — Process Injection
+
+As a countermeasure: every detection rule has a filter vs. coverage trade-off. Filtering msiexec reduces false positives but opens the T1218.007 defense evasion vector. That's why Sentryfy uses a defense-in-depth approach:
+
+Layer 1: Process creation (4688) — filtered, low noise  
+Layer 2: Process injection (Sysmon 8/10) — unfiltered, catches injection  
+Layer 3: Parent chain correlation — detects abnormal parent-of-parent relationships
+
+
+After updating our Splunk query to match the updated rule, we re-verify the logs and observe that the false positive alerts have disappeared.
+
+![Splunk Search](../screenshots/splunk-ps-4.png?v=2) 
