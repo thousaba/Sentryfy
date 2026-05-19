@@ -1,0 +1,42 @@
+index=windows (EventCode=4720 OR EventCode=4722 OR EventCode=4724 OR EventCode=4728 OR EventCode=4732 OR EventCode=4738)
+| eval Event_Description=case(
+    EventCode=4720, "Account_Created",
+    EventCode=4722, "Account_Enabled",
+    EventCode=4724, "Password_Reset",
+    EventCode=4728, "Added_To_Global_Group",
+    EventCode=4732, "Added_To_Local_Group",
+    EventCode=4738, "Account_Changed"
+  )
+| eval Risk_Score=case(
+    EventCode=4720, 30,
+    EventCode=4722, 25,
+    EventCode=4724, 20,
+    EventCode=4728, 35,
+    EventCode=4732, 40,
+    EventCode=4738, 10
+  )
+| bin _time span=5m
+| stats values(Event_Description) AS Events_Chain,
+        values(EventCode) AS Event_Codes,
+        values(SubjectUserName) AS Actor,
+        values(TargetSid) AS Target_SID,
+        sum(Risk_Score) AS Total_Risk,
+        dc(EventCode) AS Unique_Events,
+        count AS Total_Events
+        by TargetUserName, _time
+| where Unique_Events >= 2
+| eval Severity=case(
+    Total_Risk >= 70, "Critical",
+    Total_Risk >= 50, "High",
+    Total_Risk >= 30, "Medium",
+    1=1, "Low"
+  )
+| eval Sentryfy_Alert="Suspicious_Account_Manipulation_Chain"
+| eval Attack_Pattern=case(
+    match(mvjoin(Event_Codes,","), "4720.*4732"), "Create_Then_Privilege_Escalation",
+    match(mvjoin(Event_Codes,","), "4722.*4724"), "Enable_Then_Password_Change",
+    match(mvjoin(Event_Codes,","), "4720.*4728"), "Create_Then_Domain_Admin",
+    1=1, "Generic_Manipulation"
+  )
+| sort - Total_Risk, - _time
+| table _time, Severity, Total_Risk, Attack_Pattern, TargetUserName, Actor, Events_Chain, Total_Events

@@ -1,4 +1,4 @@
-sourcetype="XmlWinEventLog" (EventCode=4698 OR (EventCode=4688 AND CommandLine="*schtasks*/create*"))
+index=windows sourcetype="XmlWinEventLog" (EventCode=4698 OR (EventCode=4688 AND CommandLine="*schtasks*/create*"))
 | rex field=_raw "<Command>(?<TaskCommand>.*?)<\/Command>"
 | rex field=_raw "<Arguments>(?<TaskArgs>.*?)<\/Arguments>"
 | eval cmd=if(EventCode=4688, CommandLine, TaskCommand." ".TaskArgs)

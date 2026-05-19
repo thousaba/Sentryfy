@@ -12,6 +12,13 @@ The project is under active development — new SIEM platforms, event types, and
 
 ---
 
+## MITRE ATT&CK Coverage Analysis
+
+Sentryfy's detection rules are mapped against the [MITRE ATT&CK Enterprise framework](https://attack.mitre.org/). The coverage document tracks which tactics and techniques are currently defended, details the detection logic behind each rule, and outlines the prioritized roadmap for closing coverage gaps.
+
+→ [View Coverage Analysis](./docs/MITRE-Coverage-Analysis.md)
+
+
 ## Architecture
 
 ```
