@@ -156,22 +156,6 @@ Aşağıdaki 8 tactic için **tek bir kural bile yok**. Kill chain'in ikinci yar
 ### TA0043 — Reconnaissance
 *Portföy için düşük öncelik — saldırı öncesi pasif aşama, network'ten görünmüyor.*
 
----
-
-## 🎯 Önerilen Yazma Sırası
-
-Coverage gap'ini en hızlı kapatmak için önerilen sıra:
-
-| # | Teknik | Tactic | Neden öncelik? |
-|---|--------|--------|----------------|
-| 1 | **T1003.001 LSASS Access** | Credential Access | Mimikatz'in temel hareketi, PPL bypass kuralıyla pair yapar |
-| 2 | **T1547.001 Run Keys** | Persistence | Persistence'ta en yaygın yöntem, Sysmon Event ID 13 ile kolay |
-| 3 | **T1218.011 Rundll32 abuse** | Execution / Defense Evasion | Klasik LOLBin, gerçek APT'lerde her yerde var |
-| 4 | **T1071.001 C2 HTTP** | Command and Control | Yeni tactic açar, beaconing detection portföyde özgün durur |
-| 5 | **T1021.001/002 RDP / SMB** | Lateral Movement | Kill chain'in ikinci yarısını açar |
-| 6 | **T1486 Ransomware behavior** | Impact | Yüksek görünürlüklü, kısa sürede çok dosya yazma + `vssadmin delete shadows` |
-
-İlk 3'ü bitirdiğinde coverage **18 → 21** olur ve her major tactic'te en az 2 kural olur. 4-6 arası ise kill chain'in ikinci yarısını açan ilk adımlar.
 
 ---
 
