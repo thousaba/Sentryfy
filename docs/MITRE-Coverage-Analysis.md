@@ -23,7 +23,6 @@ Bu doküman, Sentryfy projesinin **şu an kapsadığı** detection kurallarını
 
 ## TA0001 — Initial Access
 
-**Kapsam: 4/9 teknik — iyi durum** 🟢
 
 | Durum | Teknik ID | Teknik Adı | Kural Dosyası |
 |-------|-----------|-----------|---------------|
@@ -40,9 +39,6 @@ Bu doküman, Sentryfy projesinin **şu an kapsadığı** detection kurallarını
 
 ## TA0002 — Execution
 
-**Kapsam: 1/13 teknik — kritik eksiklik** 🔴
-
-LOLBin tabanlı execution detection neredeyse hiç yok. PowerShell dışında klasik komut satırı çalıştırma yöntemleri tamamen boşta.
 
 | Durum | Teknik ID | Teknik Adı | Kural Dosyası |
 |-------|-----------|-----------|---------------|
@@ -60,14 +56,12 @@ LOLBin tabanlı execution detection neredeyse hiç yok. PowerShell dışında kl
 
 ## TA0003 — Persistence
 
-**Kapsam: 2/19 teknik — kritik eksiklik** 🔴
-
-Persistence'ın en yaygın yöntemleri (Run keys, Windows Service, WMI subscription) henüz kapsanmıyor.
 
 | Durum | Teknik ID | Teknik Adı | Kural Dosyası |
 |-------|-----------|-----------|---------------|
 | ✅ | T1098 | Account Manipulation | `Persistence/account-manipulation.spl` |
 | ✅ | T1053.005 | Scheduled Task | `Persistence/scheduled-task.spl` |
+| ✅ | T1053.005 | Browser Extensions  | `Persistence/scheduled-task.spl` |
 | 🔥 | T1547.001 | Registry Run Keys / Startup Folder | _planned_ |
 | 🔥 | T1543.003 | Windows Service | _planned_ |
 | 🔥 | T1136 | Local Account Creation | _planned_ |
@@ -79,9 +73,6 @@ Persistence'ın en yaygın yöntemleri (Run keys, Windows Service, WMI subscript
 
 ## TA0004 — Privilege Escalation
 
-**Kapsam: 5/14 teknik — güçlü alan** 🟢
-
-Process injection ailesi için advanced seviye kurallar mevcut. Portföyün en öne çıkan kısmı.
 
 | Durum | Teknik ID | Teknik Adı | Kural Dosyası |
 |-------|-----------|-----------|---------------|
@@ -98,9 +89,6 @@ Process injection ailesi için advanced seviye kurallar mevcut. Portföyün en �
 
 ## TA0005 — Defense Evasion
 
-**Kapsam: 5/43 teknik — sayıca düşük ama güçlü teknikler** 🟡
-
-Kapsanan teknikler advanced seviye (PPL bypass, PPID spoofing) ama yaygın evasion yöntemleri (obfuscation, registry modification) eksik.
 
 | Durum | Teknik ID | Teknik Adı | Kural Dosyası |
 |-------|-----------|-----------|---------------|
@@ -120,9 +108,6 @@ Kapsanan teknikler advanced seviye (PPL bypass, PPID spoofing) ama yaygın evasi
 
 ## TA0006 — Credential Access
 
-**Kapsam: 1/17 teknik — kritik eksiklik** 🔴
-
-LSASS dump (Mimikatz'in en temel hareketi) henüz yok. PPL bypass kuralıyla pair yapacak en önemli detection eksik.
 
 | Durum | Teknik ID | Teknik Adı | Kural Dosyası |
 |-------|-----------|-----------|---------------|
@@ -200,11 +185,13 @@ Sentryfy/
 │   ├── unauthorized-usb.spl
 │   ├── usb-threat-detection.spl
 │   └── usb-hid-detection.spl
+│   └── valid-accounts.spl
 ├── Execution/
 │   └── suspicious-command.spl
 ├── Persistence/
 │   ├── account-manipulation.spl
 │   └── scheduled-task.spl
+│   └── browser-extensions.spl
 ├── Privilege-Escalation/
 │   ├── dll-injection.spl
 │   ├── process-hollowing.spl

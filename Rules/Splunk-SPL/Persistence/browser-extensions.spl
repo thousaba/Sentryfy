@@ -1,0 +1,52 @@
+index=windows (EventCode=12 OR EventCode=13)
+
+| regex TargetObject="(?i)\\\\(Google|Microsoft|Mozilla|Brave|Opera|Chromium)\\\\.*\\\\(Extensions|ExtensionInstallForcelist|ExtensionSettings|ExtensionInstallSources)\\\\"
+
+| eval Browser=case(
+    match(TargetObject, "(?i)Google\\\\Chrome"), "Chrome",
+    match(TargetObject, "(?i)Microsoft\\\\Edge"), "Edge",
+    match(TargetObject, "(?i)Mozilla\\\\Firefox"), "Firefox",
+    match(TargetObject, "(?i)BraveSoftware"), "Brave",
+    match(TargetObject, "(?i)Opera"), "Opera",
+    match(TargetObject, "(?i)Chromium"), "Chromium",
+    1=1, "Unknown_Browser"
+  )
+
+| eval Install_Method=case(
+    match(TargetObject, "(?i)ExtensionInstallForcelist"), "Force_Install_Policy",
+    match(TargetObject, "(?i)ExtensionSettings"), "Per_Extension_Policy",
+    match(TargetObject, "(?i)ExtensionInstallSources"), "Sideload_Whitelist",
+    match(TargetObject, "(?i)HKLM.*WOW6432Node.*Extensions"), "Machine_Wide_32bit",
+    match(TargetObject, "(?i)HKLM.*Extensions"), "Machine_Wide_64bit",
+    match(TargetObject, "(?i)HKCU.*Extensions"), "User_Specific",
+    1=1, "Unknown"
+  )
+
+| eval Hive=case(
+    match(TargetObject, "(?i)^HKLM"), "HKLM",
+    match(TargetObject, "(?i)^HKCU"), "HKCU",
+    match(TargetObject, "(?i)^HKU"), "HKU",
+    1=1, "Other"
+  )
+
+| rex field=TargetObject "Extensions\\\\(?<Extension_ID>[a-z]{32})"
+
+| eval Severity=case(
+    Install_Method="Force_Install_Policy", "Critical",
+    Install_Method="Sideload_Whitelist", "High",
+    Hive="HKLM", "High",
+    Install_Method="Per_Extension_Policy", "Medium",
+    1=1, "Medium"
+  )
+
+| eval Sentryfy_Alert="T1176_Browser_Extension_Persistence"
+
+| stats count AS Event_Count,
+        values(EventCode) AS Events,
+        values(Image) AS Process,
+        values(Details) AS Details,
+        values(TargetObject) AS Target_Paths,
+        values(Sentryfy_Alert) AS Alert_Type,
+        earliest(_time) AS First_Seen,
+        latest(_time) AS Last_Seen
+        by user, Browser, Extension_ID, Install_Method, Hive, Severity
