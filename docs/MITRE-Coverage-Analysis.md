@@ -61,7 +61,7 @@ Bu doküman, Sentryfy projesinin **şu an kapsadığı** detection kurallarını
 |-------|-----------|-----------|---------------|
 | ✅ | T1098 | Account Manipulation | `Persistence/account-manipulation.spl` |
 | ✅ | T1053.005 | Scheduled Task | `Persistence/scheduled-task.spl` |
-| ✅ | T1053.005 | Browser Extensions  | `Persistence/scheduled-task.spl` |
+| ✅ | T1053.005 | Browser Extensions  | `Persistence/browser-extensions.spl` |
 | 🔥 | T1547.001 | Registry Run Keys / Startup Folder | _planned_ |
 | 🔥 | T1543.003 | Windows Service | _planned_ |
 | 🔥 | T1136 | Local Account Creation | _planned_ |
