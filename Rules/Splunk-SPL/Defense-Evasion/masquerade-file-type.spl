@@ -1,0 +1,15 @@
+index=windows sourcetype="XmlWinEventLog"
+(EventCode=4698 OR EventCode=4688)
+
+| eval cmd=coalesce(CommandLine,_raw)
+| eval cmd=lower(cmd)
+
+| where match(cmd,
+    "javaw.*(temp|appdata).*\\.(db|dat|tmp)"
+)
+
+| eval severity="high"
+| eval technique="T1036.008_Masquerade_File_Type"
+| eval detection="Suspicious_Java_Updater_Persistence"
+
+| table _time Computer SubjectUserName CommandLine ParentProcessName severity

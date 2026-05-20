@@ -4,15 +4,6 @@ Bu doküman, Sentryfy projesinin **şu an kapsadığı** detection kurallarını
 
 ---
 
-## 📊 Genel Durum
-
-| Metrik | Değer |
-|--------|-------|
-| Toplam kapsanan teknik | **18** |
-| Kapsanan tactic sayısı | **6 / 14** |
-| Yüksek öncelik gap (önerilen sonraki kurallar) | **20+** |
-| Hiç kapsanmayan tactic | **8** |
-
 **Lejant:**
 - ✅ Kapsanan — kural yazılmış, lab'de test edilmiş
 - 🔥 Yüksek öncelik — bir sonraki sprint'lerde yazılacak
@@ -95,6 +86,7 @@ Bu doküman, Sentryfy projesinin **şu an kapsadığı** detection kurallarını
 | ✅ | T1562.001 | Disable or Modify Tools (Windows Defender) | `Defense-Evasion/win-defender.spl` |
 | ✅ | T1070.001 | Clear Windows Event Logs | `Defense-Evasion/event-log-clearing.spl` |
 | ✅ | T1036.003 | Process Masquerading (svchost.exe) | `Defense-Evasion/svchost.spl` |
+| ✅ | T1036.008 | Masquerading: Masquerade File Type | `Defense-Evasion/masquerade-file-type.spl` |
 | ✅ | T1562.001 | Disable or Modify Tools (PPL / LSA Protection) | `Defense-Evasion/ppl-disabled.spl` |
 | ✅ | T1134.004 | Parent PID Spoofing | `Defense-Evasion/ppid-spoof.spl` |
 | 🔥 | T1027 | Obfuscated Files (base64, encoded commands) | _planned_ |
