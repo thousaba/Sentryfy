@@ -1,0 +1,23 @@
+index=windows sourcetype="XmlWinEventLog" "Microsoft-Windows-Sysmon" "AnyDesk"
+| xmlkv
+| search Channel="Microsoft-Windows-Sysmon/Operational" EventID=1 
+  (Image="*\\AnyDesk.exe" OR Image="*\\TeamViewer.exe" OR Image="*\\TeamViewer_Service.exe" 
+   OR Image="*\\rustdesk.exe" OR OriginalFileName="AnyDesk.exe" OR OriginalFileName="TeamViewer.exe")
+| eval img=lower(Image)
+| eval cmd=lower(CommandLine)
+| eval parent=lower(ParentImage)
+| eval tool=case(
+    match(img,"anydesk"), "AnyDesk",
+    match(img,"teamviewer"), "TeamViewer",
+    match(img,"rustdesk"), "RustDesk",
+    true(), "Unknown")
+| eval suspicious_path=if(match(img,"(temp|appdata|downloads|users\\\\public|programdata)\\\\"),1,0)
+| eval suspicious_parent=if(match(parent,"(powershell|cmd|mshta|wscript|cscript|rundll32|regsvr32)\.exe$"),1,0)
+| eval silent_install=if(match(cmd,"(--silent|/silent|/s |/verysilent|--install)"),1,0)
+| eval anydesk_unattended=if(match(cmd,"(--set-password|--start-with-win|--register-service)"),1,0)
+| eval score = suspicious_path + suspicious_parent + silent_install + anydesk_unattended
+| where score >= 2
+| eval severity=case(score>=3,"high",score=2,"medium",true(),"low")
+| eval technique="T1133_External_Remote_Services"
+| eval detection="Remote_Access_Tool_Suspicious_Execution"
+| table _time Computer tool Image CommandLine ParentImage score severity
