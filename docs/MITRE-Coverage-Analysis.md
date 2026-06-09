@@ -111,15 +111,22 @@ Bu doküman, Sentryfy projesinin **şu an kapsadığı** detection kurallarını
 
 ---
 
+## TA0007 — Discovery
+
+
+| Durum | Teknik ID | Teknik Adı | Kural Dosyası |
+|-------|-----------|-----------|---------------|
+| ✅ | T1087.001 | Account Discovery: Local Account | `Discover/local-account-discovery`|
+| 🔥 | T1018 | Remote System Discovery | _planned_ |
+| 🔥 | T1082 | System Information Discovery | _planned_ |
+| 🔥 | T1016 | System Network Configuration Discovery | _planned_ |
+
+---
+
 ## ❌ Hiç Kapsanmayan Tactic'ler
 
 Aşağıdaki 8 tactic için **tek bir kural bile yok**. Kill chain'in ikinci yarısı tamamen boş — Sentryfy şu an "saldırgan içeri girdi, sonra ne oldu?" sorusuna cevap veremiyor.
 
-### TA0007 — Discovery
-- T1087 Account Discovery
-- T1018 Remote System Discovery
-- T1082 System Information Discovery
-- T1016 System Network Configuration Discovery
 
 ### TA0008 — Lateral Movement
 - T1021.001 Remote Desktop Protocol (RDP)
@@ -142,11 +149,6 @@ Aşağıdaki 8 tactic için **tek bir kural bile yok**. Kill chain'in ikinci yar
 - T1486 Data Encrypted for Impact (Ransomware)
 - T1490 Inhibit System Recovery (vssadmin / shadow copy deletion)
 
-### TA0042 — Resource Development
-*Portföy için düşük öncelik — saldırgan tarafı, mavi takım odağında değil.*
-
-### TA0043 — Reconnaissance
-*Portföy için düşük öncelik — saldırı öncesi pasif aşama, network'ten görünmüyor.*
 
 
 ---

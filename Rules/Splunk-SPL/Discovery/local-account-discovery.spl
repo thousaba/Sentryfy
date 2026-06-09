@@ -1,0 +1,4 @@
+index=main sourcetype=XmlWinEventLog EventCode=5145 (RelativeTargetName="samr" OR RelativeTargetName="lsarpc")
+| stats count, values(IpPort) as portlar, min(_time) as ilk, max(_time) as son by IpAddress, SubjectUserName, RelativeTargetName
+| eval sure_sn = son - ilk
+| convert ctime(ilk) ctime(son)
