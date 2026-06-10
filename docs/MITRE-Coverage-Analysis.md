@@ -127,9 +127,10 @@ Bu doküman, Sentryfy projesinin **şu an kapsadığı** detection kurallarını
 
 | Durum | Teknik ID | Teknik Adı | Kural Dosyası |
 |-------|-----------|-----------|---------------|
-| ✅ | T1021.002 | SMB / Windows Admin Share | _planned_ |
+| ✅ | T1021.002 | SMB / Windows Admin Share | `Lateral-Movement/lateral-tool-transfer` |
+| ✅ | T1570 | Lateral Tool Transfer | `Lateral-Movement/smb-admin-shares` |
 | 🔥 | T1021.001 | Remote Desktop Protocol (RDP) | _planned_ |
-| 🔥 | T1570 | Lateral Tool Transfer | `Lateral-Movement/smb-admin-shares` |
+
 
 ---
 
@@ -141,6 +142,7 @@ Bu doküman, Sentryfy projesinin **şu an kapsadığı** detection kurallarını
 | 🔥 | T1071.001 | Application Layer Protocol: HTTP/S | _planned_ |
 | 🔥 | T1572 | Protocol Tunneling | _planned_ |
 
+---
 
 ## ❌ Hiç Kapsanmayan Tactic'ler
 
