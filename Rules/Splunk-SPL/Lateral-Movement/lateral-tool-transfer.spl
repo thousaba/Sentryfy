@@ -1,0 +1,6 @@
+index=main sourcetype=XmlWinEventLog EventCode=5145
+| where match(RelativeTargetName, "\.(exe|dll|ps1|bat|vbs|hta|scr)$")
+| where match(AccessList, "%%4417|%%4418")
+| table _time, SubjectUserName, IpAddress, ShareName, 
+        RelativeTargetName, AccessMask, AccessList
+| sort - _time

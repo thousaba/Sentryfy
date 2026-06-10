@@ -1,0 +1,10 @@
+index=main sourcetype=XmlWinEventLog (EventCode=5145 OR EventCode=7045)
+| eval signal=case(
+    EventCode==5145 AND match(ShareName,"(?i)\\$$") AND match(RelativeTargetName,"(?i)\.exe$"), "admin_share_write",
+    EventCode==7045 AND (match(ImagePath,"(?i)\\\\Windows\\\\[^\\\\]+\.exe$") OR match(ImagePath,"(?i)%systemroot%")), "suspicious_service",
+    1==1, null())
+| where isnotnull(signal)
+| bin _time span=2m
+| stats values(signal) as signals, values(ServiceName) as svc, values(RelativeTargetName) as files, values(ImagePath) as paths, dc(signal) as signal_types by _time, Computer
+| where signal_types >= 2
+| eval severity="HIGH", technique="T1021.002", confidence="aynı host 2dk içinde admin-share exe write + şüpheli servis = lateral movement zinciri"

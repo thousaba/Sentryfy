@@ -116,30 +116,38 @@ Bu doküman, Sentryfy projesinin **şu an kapsadığı** detection kurallarını
 
 | Durum | Teknik ID | Teknik Adı | Kural Dosyası |
 |-------|-----------|-----------|---------------|
-| ✅ | T1087.001 | Account Discovery: Local Account | `Discover/local-account-discovery`|
+| ✅ | T1087.001 | Account Discovery: Local Account | `Discovery/local-account-discovery`|
 | 🔥 | T1018 | Remote System Discovery | _planned_ |
 | 🔥 | T1082 | System Information Discovery | _planned_ |
 | 🔥 | T1016 | System Network Configuration Discovery | _planned_ |
 
 ---
 
-## ❌ Hiç Kapsanmayan Tactic'ler
-
-Aşağıdaki 8 tactic için **tek bir kural bile yok**. Kill chain'in ikinci yarısı tamamen boş — Sentryfy şu an "saldırgan içeri girdi, sonra ne oldu?" sorusuna cevap veremiyor.
-
-
 ### TA0008 — Lateral Movement
-- T1021.001 Remote Desktop Protocol (RDP)
-- T1021.002 SMB / Windows Admin Shares
-- T1570 Lateral Tool Transfer
+
+| Durum | Teknik ID | Teknik Adı | Kural Dosyası |
+|-------|-----------|-----------|---------------|
+| ✅ | T1021.002 | SMB / Windows Admin Share | _planned_ |
+| 🔥 | T1021.001 | Remote Desktop Protocol (RDP) | _planned_ |
+| 🔥 | T1570 | Lateral Tool Transfer | `Lateral-Movement/smb-admin-shares` |
+
+---
+
+### TA0011 — Command and Control
+
+| Durum | Teknik ID | Teknik Adı | Kural Dosyası |
+|-------|-----------|-----------|---------------|
+| ✅ | T1021.002 | SMB / Windows Admin Share | `Command-and-Control/remote-access-tools`|
+| 🔥 | T1071.001 | Application Layer Protocol: HTTP/S | _planned_ |
+| 🔥 | T1572 | Protocol Tunneling | _planned_ |
+
+
+## ❌ Hiç Kapsanmayan Tactic'ler
 
 ### TA0009 — Collection
 - T1560 Archive Collected Data
 - T1005 Data from Local System
 
-### TA0011 — Command and Control
-- T1071.001 Application Layer Protocol: HTTP/S
-- T1572 Protocol Tunneling
 
 ### TA0010 — Exfiltration
 - T1041 Exfiltration Over C2 Channel
@@ -149,46 +157,6 @@ Aşağıdaki 8 tactic için **tek bir kural bile yok**. Kill chain'in ikinci yar
 - T1486 Data Encrypted for Impact (Ransomware)
 - T1490 Inhibit System Recovery (vssadmin / shadow copy deletion)
 
-
-
----
-
-## 📁 Repo Yapısı
-
-```
-Sentryfy/
-├── Initial-Access/
-│   ├── phishing.spl
-│   ├── exploit-public-app.spl
-│   ├── unauthorized-usb.spl
-│   ├── usb-threat-detection.spl
-│   └── usb-hid-detection.spl
-│   └── valid-accounts.spl
-├── Execution/
-│   └── suspicious-command.spl
-├── Persistence/
-│   ├── account-manipulation.spl
-│   └── scheduled-task.spl
-│   └── browser-extensions.spl
-├── Privilege-Escalation/
-│   ├── dll-injection.spl
-│   ├── process-hollowing.spl
-│   ├── early-bird.spl
-│   ├── byovd.spl
-│   └── uac-bypass.spl
-├── Defense-Evasion/
-│   ├── win-defender.spl
-│   ├── event-log-clearing.spl
-│   ├── svchost.spl
-│   ├── ppl-disabled.spl
-│   └── ppid-spoof.spl
-├── Credential-Access/
-│   └── brute-force.spl
-└── Sigma/
-    ├── unauthorized_usb.yml
-    ├── suspicious-command.yml
-    └── brute-force.yml
-```
 
 ---
 
@@ -205,4 +173,4 @@ Tüm kurallar aşağıdaki ortamda yazılır ve test edilir:
 
 ---
 
-*Son güncelleme: 19 Mayıs 2026 ·*
+*Son güncelleme: 10 Haziran 2026 ·*
