@@ -139,7 +139,7 @@ Bu doküman, Sentryfy projesinin **şu an kapsadığı** detection kurallarını
 | Durum | Teknik ID | Teknik Adı | Kural Dosyası |
 |-------|-----------|-----------|---------------|
 | ✅ | T1021.002 | SMB / Windows Admin Share | `Command-and-Control/remote-access-tools`|
-| 🔥 | T1071.001 | Application Layer Protocol: HTTP/S | _planned_ |
+| ✅ | T1071.004 | Application Layer Protocol: DNS Tunneling | `Command-and-Control/dns-tunneling` |
 | 🔥 | T1572 | Protocol Tunneling | _planned_ |
 
 ---
@@ -175,4 +175,4 @@ Tüm kurallar aşağıdaki ortamda yazılır ve test edilir:
 
 ---
 
-*Son güncelleme: 10 Haziran 2026 ·*
+*Son güncelleme: 15 Haziran 2026 ·*

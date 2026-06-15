@@ -1,0 +1,25 @@
+index=main source="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational" EventCode=22
+| eval base_domain=replace(QueryName, "^.*\.([^\.]+\.[^\.]+)$", "\1")
+| eval subdomain=replace(QueryName, "\.[^\.]+\.[^\.]+$", "")
+| eval subdomain_len=len(subdomain)
+| where subdomain_len > 25
+| eval suspicious_process=if(match(Image, "(?i)(powershell|cmd|nslookup|rundll32|wscript|cscript)\.exe$"), 1, 0)
+| bin _time span=5m
+| stats count as query_count,
+        dc(QueryName) as unique_subs,
+        avg(subdomain_len) as avg_len,
+        sum(subdomain_len) as total_exfil_bytes,
+        max(suspicious_process) as bad_process,
+        values(subdomain) as sample_subdomains,
+        values(Image) as processes
+        by base_domain, host, _time
+| where unique_subs > 20 AND query_count > 20
+| eval risk_score = (unique_subs * 0.3) + (total_exfil_bytes / 100) + (bad_process * 50)
+| eval verdict=case(
+    risk_score > 100, "CRITICAL",
+    risk_score > 50, "HIGH",
+    true(), "INVESTIGATE"
+  )
+| where NOT match(base_domain, "(?i)(google|microsoft|cloudflare|akamai|amazonaws|windowsupdate)\.com$")
+| table _time, host, base_domain, query_count, unique_subs, avg_len, total_exfil_bytes, sample_subdomains, processes, verdict
+| sort - risk_score
