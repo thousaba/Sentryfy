@@ -1,0 +1,25 @@
+index="main" (source="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational" EventCode=1 (Image="C:\\Users\\*" OR Image="C:\\temp*" OR Image="C:\\ProgramData\\*" OR CommandLine="*.local*"))
+   OR (sourcetype="_json" event_type="alert" alert.signature="*Tunneling*")
+   OR (sourcetype="_json" event_type="dns" dns.queries{}.rrname="*lab.local*")
+   OR (sourcetype="_json" event_type="flow" dest_port=53)
+| spath path=dns.queries{}.rrtype output=q_type
+| spath path=dns.queries{}.rrname output=q_name
+| spath path=alert.signature output=sig
+| spath path=flow.bytes_toserver output=b_out
+| spath path=flow.bytes_toclient output=b_in
+| eval detection_source = case(EventCode=1,"Sysmon-Process", event_type=="alert","Suricata-Alert", event_type=="flow","Suricata-Flow", event_type=="dns","Suricata-DNS")
+| bin _time span=10m
+| stats values(detection_source) as sources,
+        values(CommandLine) as cmdline,
+        values(sig) as alert,
+        values(src_ip) as src_ip,
+        values(dest_ip) as dest_ip,
+        values(q_type) as qtype,
+        sum(b_out) as bytes_out,
+        sum(b_in) as bytes_in,
+        dc(q_name) as unique_subdomains,
+        count(eval(event_type=="dns")) as dns_query_count,
+        values(host) as host
+        by _time
+| where unique_subdomains > 30 AND dns_query_count > 50
+| where mvcount(sources)>1
