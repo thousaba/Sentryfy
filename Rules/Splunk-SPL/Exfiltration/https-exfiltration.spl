@@ -1,0 +1,21 @@
+index=main sourcetype=_json event_type=flow dest_port=443
+| spath flow.bytes_toserver output=out
+| spath flow.bytes_toclient output=in
+| spath flow.age output=flow_age
+| bin _time span=1h
+| stats sum(out) as total_out, sum(in) as total_in, count as conns,
+        sum(flow_age) as total_dur_sec, max(flow_age) as longest_flow_sec
+        by _time src_ip dest_ip
+| eval ratio = round(total_out/(total_in+1), 1)
+| eval mb_out = round(total_out/1048576, 2)
+| where total_out > 5242880 AND ratio > 10 AND conns >= 3
+| join type=left src_ip
+    [ search index=main sourcetype=XmlWinEventLog EventCode=3 (Image="*powershell*" OR Image="*python*")
+      | rename SourceIp as src_ip, Image as process_name, ProcessGuid as pguid
+      | join type=left pguid
+          [ search index=main sourcetype=XmlWinEventLog EventCode=1
+            | rename ProcessGuid as pguid, CommandLine as cmd_line ]
+      | stats values(process_name) as process_name, values(cmd_line) as cmd_line by src_ip ]
+| eval verdict = "HTTPS EXFIL SUSPECT"
+| sort - mb_out
+| table _time src_ip dest_ip conns mb_out ratio total_dur_sec longest_flow_sec process_name cmd_line verdict

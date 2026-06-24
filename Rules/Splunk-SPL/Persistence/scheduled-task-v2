@@ -1,0 +1,23 @@
+index=main sourcetype="XmlWinEventLog" (EventCode=4698 OR (EventCode=4688 AND CommandLine="*schtasks*/create*"))
+| rex field=_raw "<Command>(?<TaskCommand>.*?)<\/Command>"
+| rex field=_raw "<Arguments>(?<TaskArgs>.*?)<\/Arguments>"
+| eval cmd_raw=if(EventCode=4688, CommandLine, TaskCommand." ".TaskArgs)
+| eval cmd=lower(cmd_raw)
+| where NOT match(SubjectUserName, "\$$")
+| eval score=0
+| eval score=if(match(cmd, "powershell|pwsh|rundll32|mshta|regsvr32|wscript|cscript"), score+3, score)
+| eval score=if(match(cmd, "-enc|encodedcommand|frombase64|downloadstring|iex|invoke-expression"), score+5, score)
+| eval score=if(match(cmd, "hidden|bypass|-nop|-noni"), score+2, score)
+| eval score=if(match(cmd, "\\\\temp\\\\|\\\\appdata\\\\|\\\\programdata\\\\|http[s]?://"), score+3, score)
+| eval score=if(match(cmd,"ssh") AND match(cmd_raw," -[RLD]"), score+5, score)
+| eval score=if(match(cmd, "plink|chisel|socat|ngrok|\bfrpc?\b|gost\b"), score+5, score)
+| eval score=if(match(cmd, "portproxy"), score+5, score)
+| eval masquerade=if(match(lower(TaskName),"^\\\\microsoft\\\\") AND match(cmd,"ssh|plink|chisel|socat|powershell|cmd\.exe|rundll32|mshta|\\\\temp\\\\|\\\\appdata\\\\|http"), 1, 0)
+| eval score=if(masquerade==1, score+4, score)
+| where NOT (score < 4 AND match(lower(TaskName), "onedrive|edge|chrome|nvidia|adobe|googleupdate"))
+| where NOT (score < 4 AND match(lower(TaskName), "^\\\\microsoft\\\\"))
+| where score >= 5
+| eval severity=case(score>=10,"critical", score>=7,"high", true(),"medium")
+| eval indicators=mvjoin(mvappend(if(match(cmd,"powershell|pwsh|rundll32|mshta|regsvr32"),"lolbin",null()), if(match(cmd,"-enc|frombase64|iex"),"encoded",null()), if(match(cmd,"ssh|plink|chisel|socat|portproxy|ngrok|frp"),"tunneling",null()), if(masquerade==1,"masquerade",null())), ", ")
+| table _time, Computer, SubjectUserName, TaskName, cmd, indicators, score, severity
+| sort -score
