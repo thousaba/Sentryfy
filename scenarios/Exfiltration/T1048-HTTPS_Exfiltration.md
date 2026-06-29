@@ -1,4 +1,4 @@
-# T1048.002 — Exfiltration Over Asymmetric Encrypted Non-C2 Protocol (HTTPS)
+﻿# T1048.002 — Exfiltration Over Asymmetric Encrypted Non-C2 Protocol (HTTPS)
 
 > **Primary:** T1048.002 Exfiltration Over Asymmetric Encrypted Non-C2 Protocol
 > **Related:** T1048 Exfiltration Over Alternative Protocol
@@ -142,12 +142,12 @@ Reloaded with `sysmon -c config.xml`. Crucially, **443 was deliberately not adde
 
 With that closed, the full query joins network volume to host process:
 
-- [Splunk SPL](../Rules/Splunk-SPL/Exfiltration/https-exfiltration.spl) 👈
+- [Splunk SPL](../../Rules/Splunk-SPL/Exfiltration/https-exfiltration.spl) 👈
 
 
 Result — the chain is complete, now with connection duration and the launching command line:
 
-![Splunk SPL](../screenshots/https-exfiltration.png) 👈
+![Splunk SPL](../../screenshots/https-exfiltration.png) 👈
 
 
 | _time | src_ip | dest_ip | conns | mb_out | ratio | longest_flow_sec | process_name | cmd_line | verdict |

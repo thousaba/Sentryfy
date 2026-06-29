@@ -1,0 +1,16 @@
+index=windows_sysmon EventCode=1 (Image="*\\cmd.exe" OR Image="*\\powershell.exe") Computer="DESKTOP-MJ170VE"
+  NOT (ParentImage IN ("*\\initdb.exe","*\\pg_ctl.exe","*\\postgres.exe",
+       "*\\splunk.exe","*\\splunkd.exe","*\\wslhost.exe",
+       "*\\Code.exe","*\\claude.exe","*\\runas.exe")
+       OR ParentImage="*\\explorer.exe" OR ParentImage="*\\powershell.exe"
+       OR ParentImage="*\\svchost.exe"
+       OR ParentImage="*\\services.exe" OR ParentImage="*\\conhost.exe")
+| eval susp_path=if(match(ParentImage,"(?i)\\\\(Temp|temp_test|Downloads|Public|ProgramData)\\\\"),1,0)
+| eval bare_cmd=if(Image LIKE "%cmd.exe" AND match(CommandLine,"(?i)cmd\.exe\"?\s*$"),1,0)
+| eval enc=if(match(CommandLine,"(?i)\s-e(nc(odedcommand)?)?\s"),2,0)
+| eval stealth=if(match(CommandLine,"(?i)-w(indowstyle)?\s+hidden"),1,0)
+| eval chain=if(match(CommandLine,"(?i)cmd\.exe.*\/c.*powershell"),1,0)
+| eval risk=susp_path+bare_cmd+enc+stealth+chain
+| where risk >= 1
+| table _time User ParentImage Image CommandLine IntegrityLevel susp_path bare_cmd enc stealth chain risk ProcessId ParentProcessId
+| sort - risk, - _time

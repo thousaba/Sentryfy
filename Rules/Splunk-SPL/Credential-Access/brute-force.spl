@@ -1,5 +1,7 @@
-index=* EventCode=4625 
-| stats count as event_count by TargetUserName, host 
-| search event_count >= 5 
-| rename TargetUserName as User, host as ComputerName
-| table User, ComputerName, event_count
+index=windows_security (EventCode=4624 OR EventCode=4625)
+| rename TargetUserName as user
+| bin _time span=15m
+| stats count(eval(EventCode=4625)) as failed_attempts, count(eval(EventCode=4624)) as successful_attempts by _time, user, IpAddress, Logon_Type
+| where failed_attempts >= 5 AND successful_attempts > 0
+| eval zaman_dilimi=strftime(_time, "%Y-%m-%d %H:%M")
+| table zaman_dilimi, user, IpAddress, Logon_Type, failed_attempts, successful_attempts

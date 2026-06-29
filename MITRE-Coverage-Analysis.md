@@ -34,7 +34,7 @@ Bu doküman, Sentryfy projesinin **şu an kapsadığı** detection kurallarını
 | Durum | Teknik ID | Teknik Adı | Kural Dosyası |
 |-------|-----------|-----------|---------------|
 | ✅ | T1059.001 | PowerShell (Suspicious Commands) | `Execution/suspicious-command.spl` + Sigma |
-| 🔥 | T1059.003 | Windows Command Shell (cmd.exe) | _planned_ |
+| ✅ | T1059.003 | Windows Command Shell (cmd.exe) | `Execution/command_shell.spl` |
 | 🔥 | T1059.005 | Visual Basic (wscript / cscript) | _planned_ |
 | 🔥 | T1059.007 | JavaScript | _planned_ |
 | 🔥 | T1047 | Windows Management Instrumentation (WMI) | _planned_ |
@@ -175,4 +175,4 @@ Tüm kurallar aşağıdaki ortamda yazılır ve test edilir:
 
 ---
 
-*Son güncelleme: 15 Haziran 2026 ·*
+*Son güncelleme: 29 Haziran 2026 ·*
