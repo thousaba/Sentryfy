@@ -53,7 +53,7 @@ This document maps the detection rules **currently covered** by the Sentryfy pro
 | ✅ | T1098 | Account Manipulation | `Persistence/account-manipulation.spl` |
 | ✅ | T1053.005 | Scheduled Task | `Persistence/scheduled-task.spl` |
 | ✅ | T1176 | Browser Extensions | `Persistence/browser-extensions.spl` |
-| 🔥 | T1547.001 | Registry Run Keys / Startup Folder | _planned_ |
+| ✅ | T1547.001 | Registry Run Keys / Startup Folder | `Persistence/registry_run_keys` |
 | 🔥 | T1543.003 | Windows Service | _planned_ |
 | 🔥 | T1136 | Local Account Creation | _planned_ |
 | 🔥 | T1546.003 | WMI Event Subscription | _planned_ |
@@ -174,4 +174,4 @@ All rules are written and tested in the following environment:
 
 ---
 
-*Last updated: July 01, 2026 ·*
+*Last updated: July 03, 2026 ·*
