@@ -1,0 +1,7 @@
+index=windows_sysmon EventCode=13 TargetObject="*CurrentVersion\\Run*" EventType=SetValue
+| eval details_lower=lower(Details)
+| eval known_good=if(match(details_lower,"(?i)^\"?c:\\\\(program files|program files \(x86\)|windows|programdata\\\\microsoft)\\\\"),1,0)
+| eval exe_payload=if(match(details_lower,"(?i)\.(exe|dll|scr|bat|cmd|ps1|vbs|js|hta)\"?$"),1,0)
+| where known_good=0 AND exe_payload=1
+| table _time Image TargetObject Details User
+| sort - _time
