@@ -38,7 +38,6 @@ This document maps the detection rules **currently covered** by the Sentryfy pro
 | 🔥 | T1059.005 | Visual Basic (wscript / cscript) | _planned_ |
 | 🔥 | T1059.007 | JavaScript | _planned_ |
 | 🔥 | T1047 | Windows Management Instrumentation (WMI) | _planned_ |
-| 🔥 | T1218.005 | Mshta abuse | _planned_ |
 | 🔥 | T1218.010 | Regsvr32 (Squiblydoo) | _planned_ |
 | 🔥 | T1218.011 | Rundll32 abuse | _planned_ |
 | ⏳ | T1203 | Exploitation for Client Execution | _planned_ |
@@ -89,6 +88,7 @@ This document maps the detection rules **currently covered** by the Sentryfy pro
 | ✅ | T1036.008 | Masquerading: Masquerade File Type | `Defense-Evasion/masquerade-file-type.spl` |
 | ✅ | T1562.001 | Disable or Modify Tools (PPL / LSA Protection) | `Defense-Evasion/ppl-disabled.spl` |
 | ✅ | T1134.004 | Parent PID Spoofing | `Defense-Evasion/ppid-spoof.spl` |
+| ✅ | T1218.005 | Mshta abuse | `Defense-Evasion/system_binary_proxy_execution.spl` |
 | 🔥 | T1027 | Obfuscated Files (base64, encoded commands) | _planned_ |
 | 🔥 | T1140 | Deobfuscate / Decode Files or Information | _planned_ |
 | 🔥 | T1112 | Modify Registry | _planned_ |

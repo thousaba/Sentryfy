@@ -1,0 +1,21 @@
+| tstats summariesonly=t count from datamodel=Endpoint.Processes 
+    where Processes.process_name IN ("mshta.exe","wscript.exe","cscript.exe") 
+    by Processes.parent_process_name, Processes.process_name, Processes.process, Processes.dest, Processes.user, _time span=1m
+| rename Processes.* as *
+| eval process_lower=lower(process)
+| lookup legal_apps.csv parent_process_name OUTPUT parent_process_name as is_legal
+| where isnull(is_legal)
+| eval is_user_dir = if(match(process_lower, "(downloads|temp|appdata|desktop)"), 1, 0)
+| eval is_susp_ext = if(match(process_lower, "(\.hta|\.js|\.vbs|\.wsf)"), 1, 0)
+| eval is_remote_inline = if(match(process_lower, "(http:\/\/|https:\/\/|javascript:|vbscript:|about:)"), 1, 0)
+| eval confidence = case(
+    is_remote_inline==1, 0.85, 
+    is_user_dir==1 AND is_susp_ext==1, 0.60, 
+    is_susp_ext==1, 0.40, 
+    true(), 0.20
+)
+| eval impact = 45
+| eval risk_score = round(impact*confidence, 2)
+| eval risk_message = "Suspicious Script Host Execution: " . process_name . " triggered by " . parent_process_name
+| table _time, user, dest, parent_process_name, process_name, process, confidence, impact, risk_score, risk_message
+| sort - risk_score, _time
