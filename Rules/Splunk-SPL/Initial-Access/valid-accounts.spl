@@ -1,42 +1,43 @@
-index=windows (EventCode=4720 OR EventCode=4722 OR EventCode=4724 OR EventCode=4728 OR EventCode=4732 OR EventCode=4738)
-| eval Event_Description=case(
-    EventCode=4720, "Account_Created",
-    EventCode=4722, "Account_Enabled",
-    EventCode=4724, "Password_Reset",
-    EventCode=4728, "Added_To_Global_Group",
-    EventCode=4732, "Added_To_Local_Group",
-    EventCode=4738, "Account_Changed"
-  )
-| eval Risk_Score=case(
-    EventCode=4720, 30,
-    EventCode=4722, 25,
-    EventCode=4724, 20,
-    EventCode=4728, 35,
-    EventCode=4732, 40,
-    EventCode=4738, 10
-  )
-| bin _time span=5m
-| stats values(Event_Description) AS Events_Chain,
-        values(EventCode) AS Event_Codes,
-        values(SubjectUserName) AS Actor,
-        values(TargetSid) AS Target_SID,
-        sum(Risk_Score) AS Total_Risk,
-        dc(EventCode) AS Unique_Events,
-        count AS Total_Events
-        by TargetUserName, _time
-| where Unique_Events >= 2
-| eval Severity=case(
-    Total_Risk >= 70, "Critical",
-    Total_Risk >= 50, "High",
-    Total_Risk >= 30, "Medium",
-    1=1, "Low"
-  )
-| eval Sentryfy_Alert="Suspicious_Account_Manipulation_Chain"
-| eval Attack_Pattern=case(
-    match(mvjoin(Event_Codes,","), "4720.*4732"), "Create_Then_Privilege_Escalation",
-    match(mvjoin(Event_Codes,","), "4722.*4724"), "Enable_Then_Password_Change",
-    match(mvjoin(Event_Codes,","), "4720.*4728"), "Create_Then_Domain_Admin",
-    1=1, "Generic_Manipulation"
-  )
-| sort - Total_Risk, - _time
-| table _time, Severity, Total_Risk, Attack_Pattern, TargetUserName, Actor, Events_Chain, Total_Events
+| tstats summariesonly=t count as events
+  from datamodel=Authentication
+  where earliest=-30d latest=now
+    Authentication.user!="*$" Authentication.user!="DWM-*" Authentication.user!="UMFD-*"
+    NOT Authentication.user IN ("-","unknown","SYSTEM","LOCAL SERVICE","NETWORK SERVICE","ANONYMOUS LOGON")
+  by _time span=1m, Authentication.user, Authentication.src, Authentication.dest, Authentication.app, Authentication.action
+| rename Authentication.* as *
+| eval src=case(
+    match(src,"^(::1|127\.0\.0\.1|-|0\.0\.0\.0|localhost)$"), coalesce(dest,"LOCAL"),
+    isnull(src) OR src="", coalesce(dest,"unknown"),
+    true(), src)
+| eval fails=if(action="failure",events,0)
+| eval acct=lower(replace(replace(user,"@.*$",""),"^.*\\\\",""))
+| lookup identity_normalize alias AS acct OUTPUT identity
+| eval identity=coalesce(identity, acct)
+| eventstats min(_time) as fs_pair by identity, src
+| eventstats min(_time) as fs_identity by identity
+| eventstats dc(src) as hist_srcs by identity
+| where _time >= relative_time(now(),"-24h")
+| eval hour=tonumber(strftime(_time,"%H")), wday=strftime(_time,"%w")
+| eval oh=if(hour<7 OR hour>19 OR wday IN ("0","6"),1,0)
+| stats sum(events) as events, sum(fails) as fails,
+        sum(eval(if(oh=1,events,0))) as offhours_events,
+        dc(src) as distinct_src, values(src) as sources, values(app) as apps,
+        max(fs_pair) as fs_src, min(fs_identity) as fs_identity,
+        max(hist_srcs) as hist_srcs,
+        min(_time) as first_time, max(_time) as last_time
+        by identity
+| lookup identity_lookup identity OUTPUT priv_tier
+| eval priv_tier=coalesce(priv_tier,"standard")
+| eval impact=case(priv_tier="tier0",90, priv_tier="service",90, priv_tier="tier1",65, true(),60)
+| eval c_base=0.05
+| eval c_newid=if(fs_identity>=relative_time(now(),"-24h"),0.15,0)
+| eval c_newsrc=if(fs_src>=relative_time(now(),"-24h") AND fs_identity<relative_time(now(),"-24h") AND hist_srcs>1,0.15,0)
+| eval c_offhours=if(offhours_events>0,0.10,0)
+| eval c_failburst=if(fails>=5 AND fails/events>0.5,0.15,0)
+| eval c_spray=if(distinct_src>3,0.10,0)
+| eval confidence=min(0.45, c_base+c_newid+c_newsrc+c_offhours+c_failburst+c_spray)
+| eval risk_score=round(impact*confidence,2)
+| where confidence>0.05
+| eval risk_object=identity, risk_object_type="user", detection_id="T1078-CORE", annotations_mitre="T1078"
+| table risk_object risk_score confidence impact priv_tier events fails distinct_src sources apps c_base c_newid c_newsrc c_offhours c_failburst c_spray first_time last_time
+| sort - risk_score

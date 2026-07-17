@@ -1,31 +1,42 @@
-index=windows (EventCode=4720 OR EventCode=4732 OR EventCode=4728 OR EventCode=4756 OR EventCode=4738)
-| eval event_desc=case(
-    EventCode=4720, "New user account created",
-    EventCode=4732, "Member added to local group",
-    EventCode=4728, "Member added to global security group",
-    EventCode=4756, "Member added to universal security group",
-    EventCode=4738, "User account modified / renamed"
+index=windows (EventCode=4720 OR EventCode=4722 OR EventCode=4724 OR EventCode=4728 OR EventCode=4732 OR EventCode=4738)
+| eval Event_Description=case(
+    EventCode=4720, "Account_Created",
+    EventCode=4722, "Account_Enabled",
+    EventCode=4724, "Password_Reset",
+    EventCode=4728, "Added_To_Global_Group",
+    EventCode=4732, "Added_To_Local_Group",
+    EventCode=4738, "Account_Changed"
   )
-| eval GroupName=case(
-    EventCode=4720, "N/A (user creation)",
-    EventCode=4738, "N/A (user modification)",
-    true(), TargetUserName
+| eval Risk_Score=case(
+    EventCode=4720, 30,
+    EventCode=4722, 25,
+    EventCode=4724, 20,
+    EventCode=4728, 35,
+    EventCode=4732, 40,
+    EventCode=4738, 10
   )
-| eval CreatedOrAddedUser=if(EventCode=4720 OR EventCode=4738, TargetUserName, coalesce(MemberName, MemberSid))
-| where NOT match(SubjectUserName, "\$$")
-| where NOT SubjectUserName IN ("SYSTEM", "LOCAL SERVICE", "NETWORK SERVICE")
-| where NOT (EventCode IN (4732, 4728, 4756) AND GroupName IN ("Users", "Yok", "None"))
-| eval severity=case(
-    EventCode IN (4732, 4728, 4756) AND match(GroupName, "(?i)(administrators|yöneticiler|domain admins|enterprise admins)"), "critical",
-    EventCode=4738 AND (match(lower(TargetUserName), "admin|root|yönetici") OR match(lower(TargetSid), "administrator$|-500$")), "high",
-    EventCode=4720, "high",
-    true(), "medium"
+| bin _time span=5m
+| stats values(Event_Description) AS Events_Chain,
+        values(EventCode) AS Event_Codes,
+        values(SubjectUserName) AS Actor,
+        values(TargetSid) AS Target_SID,
+        sum(Risk_Score) AS Total_Risk,
+        dc(EventCode) AS Unique_Events,
+        count AS Total_Events
+        by TargetUserName, _time
+| where Unique_Events >= 2
+| eval Severity=case(
+    Total_Risk >= 70, "Critical",
+    Total_Risk >= 50, "High",
+    Total_Risk >= 30, "Medium",
+    1=1, "Low"
   )
-| eval alert_type=case(
-    severity="critical", "Privileged Group Membership Added (T1098)",
-    EventCode=4738, "Account Manipulation / Rename (T1098)",
-    severity="high", "New User Account Created (T1136)",
-    true(), "Account Group Modification"
+| eval Sentryfy_Alert="Suspicious_Account_Manipulation_Chain"
+| eval Attack_Pattern=case(
+    match(mvjoin(Event_Codes,","), "4720.*4732"), "Create_Then_Privilege_Escalation",
+    match(mvjoin(Event_Codes,","), "4722.*4724"), "Enable_Then_Password_Change",
+    match(mvjoin(Event_Codes,","), "4720.*4728"), "Create_Then_Domain_Admin",
+    1=1, "Generic_Manipulation"
   )
-| table _time, Computer, SubjectUserName, event_desc, GroupName, CreatedOrAddedUser, severity, alert_type
-| sort -_time
+| sort - Total_Risk, - _time
+| table _time, Severity, Total_Risk, Attack_Pattern, TargetUserName, Actor, Events_Chain, Total_Events
