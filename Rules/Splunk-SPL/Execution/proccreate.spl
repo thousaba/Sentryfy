@@ -1,0 +1,42 @@
+| tstats summariesonly=t count as events
+  from datamodel=Endpoint.Processes
+  where earliest=-30d latest=now
+    Processes.process_name IN ("cmd.exe","powershell.exe","pwsh.exe")
+    Processes.dest="DESKTOP-MJ170VE"
+  by _time span=1m, Processes.dest, Processes.user, Processes.process_name,
+     Processes.process, Processes.parent_process_name, Processes.parent_process,
+     Processes.process_integrity_level, Processes.process_id, Processes.parent_process_id
+| rename Processes.* as *
+| eval IntegrityLevel=process_integrity_level
+| rex field=parent_process "^\"?(?<parent_full_path>[a-z]:\\\\[^\"]+?\.exe)"
+| rex field=parent_process "(?<parent_exe>[^\\\\]+\.exe)"
+| lookup legal_parent_name.csv parent_process_name AS parent_exe OUTPUT required_path
+| eval name_hit=if(isnotnull(required_path) AND match(lower(parent_full_path),lower(required_path)),1,null())
+| eval path_hit=if(match(lower(parent_process),"(program files|windowsapps|printing_admin_scripts|ccmcache)"),1,null())
+| where isnull(name_hit) AND isnull(path_hit)
+| where NOT match(parent_process,"(?i)\\\\(explorer|services|svchost|conhost|updater|wuaucltcore|GoogleUpdate)\.exe")
+| eval is_logquery=if(match(process,"(?i)(get-winevent|get-eventlog|where-object.*message|-logname)"),1,0)
+| eval parent_lineage=if(match(parent_process,"(?i)\\\\(winword|excel|powerpnt|outlook|onenote|mshta|wscript|cscript|sqlservr|w3wp|httpd|nginx|tomcat)\.exe"),4,0)
+| eval untrusted_parent=if(match(parent_process,"(?i)[a-z]:\\\\(Users\\\\[^\\\\]+\\\\AppData\\\\Local\\\\Temp|Temp|temp_test|ProgramData|Public|Intel|PerfLogs)\\\\") AND NOT match(parent_process,"(?i)\\\\(Program Files|WindowsApps)\\\\"),3,0)
+| eval susp_path=if(match(parent_process,"(?i)\\\\(Temp|temp_test|Downloads|Public)\\\\"),1,0)
+| eval bare_cmd=if(match(process_name,"(?i)cmd\.exe") AND match(process,"(?i)^\"?[a-z]:\\\\.*\\\\cmd\.exe\"?\s*$"),1,0)
+| eval enc=if(match(process,"(?i)\s-e(nc|ncodedcommand)?\s+[A-Za-z0-9+/=]{16,}"),2,0)
+| eval stealth=if(match(process,"(?i)-w(indowstyle)?\s+hidden"),1,0)
+| eval chain=if(match(process,"(?i)cmd\.exe.*\/c.*powershell"),1,0)
+| eval cradle=if(is_logquery=0 AND match(process,"(?i)(new-object\s+net\.webclient|downloadstring|downloadfile|iwr|invoke-webrequest|iex\s*\(|certutil.*-urlcache|bitsadmin)"),2,0)
+| eval exec_bypass=if(match(process,"(?i)-e(x|xecutionpolicy)?\s+bypass") AND (susp_path=1 OR untrusted_parent>0 OR cradle>0 OR enc>0),1,0)
+| eval conf_raw=parent_lineage+untrusted_parent+susp_path+bare_cmd+enc+stealth+chain+cradle+exec_bypass
+| where conf_raw >= 2
+| eval benign_check=if(untrusted_parent>0 AND match(process,"(?i)(get-executionpolicy|get-command\s|exit\s+[01]|\.StartsWith\(|\.Count\s*-gt|-erroraction\s+silentlycontinue)"),1,0)
+| where benign_check=0
+| eval impact=case(
+    match(process,"(?i)(wmic|invoke-wmimethod|invoke-command|enter-pssession|new-pssession|winrm)"), 70,
+    IntegrityLevel IN ("system","high"), 65,
+    true(), 50)
+| eval confidence=case(
+    parent_lineage>0, min(0.85,0.60+conf_raw*0.03),
+    untrusted_parent>0, min(0.80,0.40+conf_raw*0.05),
+    true(), min(0.70,conf_raw*0.10))
+| eval risk_score=round(impact*confidence,2)
+| eval risk_object=dest, risk_object_type="host", detection_id="T1059-PROCCREATE", annotations_mitre="T1059"
+| collect index=risk

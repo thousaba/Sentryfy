@@ -1,0 +1,22 @@
+index=windows_powershell EventCode=4104
+| eval is_signed=if(match(ScriptBlockText,"SIG # Begin signature block|Copyright \(c\) Microsoft Corporation"),1,0)
+| eval is_vscode=if(match(ScriptBlockText,"(?i)(__VSCodeState|__VSCode-Escape|OSC 633|PSConsoleHostReadLine|VSCODE_NONCE)"),1,0)
+| eval is_atomicmodule=if(match(ScriptBlockText,"(?i)(Invoke-AtomicRedTeam|AtomicTestHarnesses|RootModule\s*=|Cloudbase Solutions)"),1,0)
+| eval indicator_removal=if(match(ScriptBlockText,"(?i)(clear-eventlog|wevtutil\s+cl|remove-item.*\.(csv|log|evtx|xml)|remove-eventlog|clear-history|-HistorySaveStyle\s+SaveNothing)"),4,0)
+| eval is_logread=if(match(ScriptBlockText,"(?i)(get-winevent|get-eventlog|-logname\s)") AND indicator_removal=0,1,0)
+| where is_signed=0 AND is_vscode=0 AND is_atomicmodule=0 AND is_logread=0
+| eval cradle=if(match(ScriptBlockText,"(?i)(downloadstring|downloadfile|invoke-webrequest|iwr\s|start-bitstransfer|net\.webclient)"),3,0)
+| eval iex_local=if(cradle=0 AND match(ScriptBlockText,"(?i)(iex\s|invoke-expression)"),1,0)
+| eval amsi=if(match(ScriptBlockText,"(?i)(amsiutils|amsiinitfailed|amsiscanbuffer|\[ref\]\.assembly)"),4,0)
+| eval inject=if(match(ScriptBlockText,"(?i)(virtualalloc|writeprocessmemory|createremotethread|ntcreatethreadex|reflection\.assembly\]::load)"),4,0)
+| eval obfusc=if(match(ScriptBlockText,"(?i)(frombase64string|\-bxor)"),2,0)
+| eval downgrade=if(match(ScriptBlockText,"(?i)-version\s+2|-v\s+2"),2,0)
+| eval conf_raw=cradle+iex_local+amsi+inject+obfusc+downgrade+indicator_removal
+| where conf_raw >= 2
+| eval impact=65
+| eval confidence=min(0.90, 0.30+conf_raw*0.10)
+| eval risk_score=round(impact*confidence,2)
+| eval risk_object=Computer, risk_object_type="host", detection_id="T1059.001-SCRIPTBLOCK", annotations_mitre="T1059.001"
+| table _time Computer ScriptBlockText cradle iex_local amsi inject obfusc downgrade indicator_removal conf_raw impact confidence risk_score
+| sort - risk_score
+| collect index=risk

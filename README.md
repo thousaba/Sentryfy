@@ -173,5 +173,3 @@ All rules are written and tested in the following environment:
 - **Active security features:** LSA Protection (RunAsPPL), HVCI, Secure Boot — for realistic attack simulation
 
 ---
-
-*Last updated: July 03, 2026 ·*
