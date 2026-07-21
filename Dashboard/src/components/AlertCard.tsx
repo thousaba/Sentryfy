@@ -1,43 +1,62 @@
-import type { Alert } from '../types/Alert'
+import type { CSSProperties } from 'react';
+import { FaTrashAlt } from 'react-icons/fa';
+import type { RiskAlert } from '../types/Alert';
+import { SEVERITY } from '../lib/severity';
+import SeverityBadge from './SeverityBadge';
+import RiskMeter from './RiskMeter';
 import '../css/Alert.css';
-import { FaTrashAlt } from "react-icons/fa";
 
 interface AlertCardProps {
-  alert: Alert;
+  alert:    RiskAlert;
   onDelete: () => void;
 }
 
-function resolveIp(alert: Alert): string {
-  const rawIp = alert.data?.win?.eventdata?.ipAddress;
-  const agentIp = alert.agent?.ip;
-
-  if (!rawIp || rawIp === '-' || rawIp === '::1' || rawIp === '0.0.0.0') {
-    return agentIp ? `Yerel (${agentIp})` : 'Bilinmiyor';
-  }
-  return rawIp;
-}
-
 function formatTime(ts: string): string {
-  const d = new Date(ts);
-  return d.toLocaleString('tr-TR', {
+  return new Date(ts).toLocaleString('tr-TR', {
     day: '2-digit', month: '2-digit', year: 'numeric',
-    hour: '2-digit', minute: '2-digit', second: '2-digit'
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
   });
 }
 
 function AlertCard({ alert, onDelete }: AlertCardProps) {
-  const ip = resolveIp(alert);
+  const meta = SEVERITY[alert.severity];
 
   return (
-    <div className='alert-card'>
-      <button className="delete-btn" onClick={onDelete}>
+    <div className="alert-card" style={{ '--accent': meta.color } as CSSProperties}>
+      <button className="delete-btn" onClick={onDelete} aria-label="Sil">
         <FaTrashAlt />
       </button>
-      <p>🚨 <b>{alert.rule.description}</b></p>
-      <p>Seviye: {alert.rule.level}</p>
-      <p>Ajan: {alert.agent.name}</p>
-      <p>IP: {ip}</p>
-      <p>Zaman: {formatTime(alert.timestamp)}</p>
+
+      <div className="alert-card-header">
+        <h3 className="alert-card-title">{alert.riskObject}</h3>
+        <SeverityBadge severity={alert.severity} />
+      </div>
+
+      <RiskMeter score={alert.totalRisk} severity={alert.severity} />
+
+      <div className="alert-card-meta">
+        <span>{alert.detectionCount} detections</span>
+        <span className="alert-card-meta-dot">•</span>
+        <span>{alert.techniqueCount} techniques</span>
+        <span className="alert-card-meta-dot">•</span>
+        <span>{formatTime(alert.timestamp)}</span>
+      </div>
+
+      {alert.techniques.length > 0 && (
+        <div className="chip-row">
+          {alert.techniques.map((t, i) => (
+            <span className="chip" key={`${t}-${i}`}>{t}</span>
+          ))}
+        </div>
+      )}
+
+      {alert.detections.length > 0 && (
+        <ul className="detection-list">
+          {alert.detections.map((d, i) => (
+            <li key={`${d}-${i}`}>{d}</li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

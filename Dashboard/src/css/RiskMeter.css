@@ -1,0 +1,30 @@
+.risk-meter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.risk-meter-track {
+  --fill-color: #898781;
+  --track-color: rgba(137, 135, 129, 0.18);
+  flex: 1;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--track-color);
+  overflow: hidden;
+}
+
+.risk-meter-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--fill-color);
+  transition: width 0.3s ease;
+}
+
+.risk-meter-value {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 14px;
+  min-width: 34px;
+  text-align: right;
+}
