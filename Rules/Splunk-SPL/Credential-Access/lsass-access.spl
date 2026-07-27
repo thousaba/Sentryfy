@@ -1,0 +1,22 @@
+index=windows_sysmon EventCode=10 TargetImage="*\\lsass.exe"
+| rex field=SourceImage "(?<src_exe>[^\\\\]+\.exe)$"
+| lookup legal_lsass_access.csv process_name AS src_exe OUTPUT required_path
+| eval allow=if(isnotnull(required_path) AND like(lower(SourceImage), "%".lower(required_path)."%"), 1, null())
+| where isnull(allow)
+| eval susp_access=if(GrantedAccess IN ("0x1010","0x1410","0x143a","0x1438","0x1fffff","0x1f1fff","0x1f3fff","0x1478","0x14c2"),1,0)
+| eval susp_stack=if(match(CallTrace,"(?i)(dbgcore\.dll|dbghelp\.dll|comsvcs\.dll|UNKNOWN)"),1,0)
+| eval conf_raw=susp_access+susp_stack
+| eval confidence=case(
+    conf_raw>=2, 0.90,
+    susp_stack=1, 0.85,
+    susp_access=1, 0.70,
+    true(), 0)
+| where confidence>0
+| eval impact=90
+| eval risk_score=round(impact*confidence,2)
+| stats max(risk_score) as risk_score, values(SourceImage) as risk_detail,
+        max(susp_stack) as susp_stack, max(GrantedAccess) as GrantedAccess,
+        count as access_count
+        by Computer
+| eval risk_object=Computer, risk_object_type="host",
+       detection_id="T1003.001-LSASS-ACCESS", annotations_mitre="T1003.001"

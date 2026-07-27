@@ -83,12 +83,12 @@ This document maps the detection rules **currently covered** by the Sentryfy pro
 | Status | Technique ID | Technique Name | Rule File |
 |--------|--------------|----------------|-----------|
 | ✅ | T1562.001 | Disable or Modify Tools (Windows Defender) | `Defense-Evasion/win-defender.spl` |
-| ✅ | T1070.001 | Clear Windows Event Logs | `Defense-Evasion/event-log-clearing.spl` |
 | ✅ | T1036.003 | Process Masquerading (svchost.exe) | `Defense-Evasion/svchost.spl` |
 | ✅ | T1036.008 | Masquerading: Masquerade File Type | `Defense-Evasion/masquerade-file-type.spl` |
 | ✅ | T1562.001 | Disable or Modify Tools (PPL / LSA Protection) | `Defense-Evasion/ppl-disabled.spl` |
 | ✅ | T1134.004 | Parent PID Spoofing | `Defense-Evasion/ppid-spoof.spl` |
 | ✅ | T1218.005 | Mshta abuse | `Defense-Evasion/system_binary_proxy_execution.spl` |
+| 🔥 | T1070.001 | Clear Windows Event Logs | _planned_ |
 | 🔥 | T1027 | Obfuscated Files (base64, encoded commands) | _planned_ |
 | 🔥 | T1140 | Deobfuscate / Decode Files or Information | _planned_ |
 | 🔥 | T1112 | Modify Registry | _planned_ |
@@ -116,7 +116,7 @@ This document maps the detection rules **currently covered** by the Sentryfy pro
 
 | Status | Technique ID | Technique Name | Rule File |
 |--------|--------------|----------------|-----------|
-| ✅ | T1087.001 | Account Discovery: Local Account | `Discovery/local-account-discovery` |
+| 🔥 | T1087.001 | Account Discovery: Local Account | _planned_ |
 | 🔥 | T1018 | Remote System Discovery | _planned_ |
 | 🔥 | T1082 | System Information Discovery | _planned_ |
 | 🔥 | T1016 | System Network Configuration Discovery | _planned_ |
@@ -140,23 +140,6 @@ This document maps the detection rules **currently covered** by the Sentryfy pro
 | ✅ | T1021.002 | SMB / Windows Admin Share | `Command-and-Control/remote-access-tools` |
 | ✅ | T1071.004 | Application Layer Protocol: DNS Tunneling | `Command-and-Control/dns-tunneling` |
 | 🔥 | T1572 | Protocol Tunneling | _planned_ |
-
----
-
-## ❌ Tactics With No Coverage
-
-### TA0009 — Collection
-- T1560 Archive Collected Data
-- T1005 Data from Local System
-
-
-### TA0010 — Exfiltration
-- T1041 Exfiltration Over C2 Channel
-- T1567 Exfiltration Over Web Service
-
-### TA0040 — Impact
-- T1486 Data Encrypted for Impact (Ransomware)
-- T1490 Inhibit System Recovery (vssadmin / shadow copy deletion)
 
 
 ---

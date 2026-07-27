@@ -1,0 +1,23 @@
+index=windows_sysmon EventCode=1
+  (CommandLine="*lsass*" OR CommandLine="*MiniDump*" OR CommandLine="*sekurlsa*" OR CommandLine="*comsvcs*" OR Image="*procdump*" OR Image="*procexp*")
+| eval dump_tool=case(
+    match(CommandLine,"(?i)(mimikatz|sekurlsa|lsadump|pypykatz|handlekatz|dumpert|nanodump)"), "offensive",
+    match(CommandLine,"(?i)procdump.*(-ma|lsass)|procexp.*lsass"), "procdump",
+    match(CommandLine,"(?i)comsvcs.*MiniDump|rundll32.*comsvcs.*\d+\s+lsass|rundll32.*MiniDump"), "comsvcs",
+    match(CommandLine,"(?i)(werfault|createdump).*lsass"), "livedump_abuse",
+    match(CommandLine,"(?i)-ma\s+lsass|dumptype.*full.*lsass"), "generic_dump",
+    true(), null())
+| where isnotnull(dump_tool)
+| eval impact=90
+| eval confidence=case(
+    dump_tool="offensive", 0.85,
+    dump_tool="comsvcs", 0.80,
+    dump_tool="livedump_abuse", 0.80,
+    true(), 0.70)
+| eval risk_score=round(impact*confidence,2)
+| stats max(risk_score) as risk_score, values(dump_tool) as dump_tool,
+        values(CommandLine) as risk_detail, values(Image) as writer_proc,
+        count as exec_count
+        by Computer
+| eval risk_object=Computer, risk_object_type="host",
+       detection_id="T1003.001-DUMP-CMDLINE", annotations_mitre="T1003.001"

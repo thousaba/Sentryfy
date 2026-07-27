@@ -1,3 +1,0 @@
-#source="XmlWinEventLog:Security" EventCode=6416
-#NOT DeviceId="*B06EBF0AB49FE651F14647C0*"
-#| table _time, ComputerName, SubjectUserName, DeviceId, DeviceDescription

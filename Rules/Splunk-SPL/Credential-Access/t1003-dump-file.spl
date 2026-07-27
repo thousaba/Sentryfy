@@ -1,0 +1,23 @@
+index=windows_sysmon EventCode=11
+  (TargetFilename="*.dmp" OR Image="*procdump*" OR Image="*rundll32*" OR Image="*powershell*")
+| eval dump_file=case(
+    match(TargetFilename,"(?i)lsass.*\.dmp"), "explicit_lsass",
+    match(TargetFilename,"(?i)\\\\Windows\\\\WER\\\\|\\\\WER\\\\Temp\\\\|WER\.[a-f0-9-]+\.tmp"), null(),
+    match(TargetFilename,"(?i)\.dmp$") AND match(TargetFilename,"(?i)\\\\(Temp|temp_test|Public|ProgramData|Users\\\\Public|Windows\\\\Temp)\\\\"), "suspicious_location",
+    match(Image,"(?i)\\\\(rundll32|procdump|powershell|pwsh)\.exe$") AND match(TargetFilename,"(?i)\.(dmp|bin|tmp|log|dat)$"), "dump_by_susp_proc",
+    true(), null())
+| where isnotnull(dump_file)
+| eval impact=90
+| eval confidence=case(
+    dump_file="explicit_lsass", 0.80,
+    dump_file="dump_by_susp_proc", 0.65,
+    dump_file="suspicious_location", 0.55,
+    true(), 0)
+| where confidence>0
+| eval risk_score=round(impact*confidence,2)
+| stats max(risk_score) as risk_score, values(TargetFilename) as risk_detail,
+        values(dump_file) as dump_file, values(Image) as writer_proc,
+        count as file_count
+        by Computer
+| eval risk_object=Computer, risk_object_type="host",
+       detection_id="T1003.001-DUMP-FILE", annotations_mitre="T1003.001"
