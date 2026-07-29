@@ -28,11 +28,18 @@ function AlertCard({ alert, onDelete }: AlertCardProps) {
       </button>
 
       <div className="alert-card-header">
-        <h3 className="alert-card-title">{alert.riskObject}</h3>
+        <div>
+          <h3 className="alert-card-title">{alert.riskObject}</h3>
+          {alert.title && <span className="alert-card-subtitle">{alert.title}</span>}
+        </div>
         <SeverityBadge severity={alert.severity} />
       </div>
 
       <RiskMeter score={alert.totalRisk} severity={alert.severity} />
+
+      {alert.description && (
+        <p className="alert-card-description">{alert.description}</p>
+      )}
 
       <div className="alert-card-meta">
         <span>{alert.detectionCount} detections</span>

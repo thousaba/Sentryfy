@@ -1,7 +1,38 @@
-index=windows_security (EventCode=4624 OR EventCode=4625)
-| rename TargetUserName as user
-| bin _time span=15m
-| stats count(eval(EventCode=4625)) as failed_attempts, count(eval(EventCode=4624)) as successful_attempts by _time, user, IpAddress, Logon_Type
-| where failed_attempts >= 5 AND successful_attempts > 0
-| eval zaman_dilimi=strftime(_time, "%Y-%m-%d %H:%M")
-| table zaman_dilimi, user, IpAddress, Logon_Type, failed_attempts, successful_attempts
+index=windows_security (EventCode=4625 OR EventCode=4624)
+    TargetUserName!="*$" TargetUserName!="DWM-*" TargetUserName!="UMFD-*"
+    TargetUserName!="SYSTEM" TargetUserName!="ANONYMOUS LOGON"
+| eval action=if(EventCode==4625, "failure", "success")
+| eval event_time=_time
+| eval src=coalesce(IpAddress, WorkstationName, "unknown")
+| stats count(eval(action="failure")) as fails,
+        dc(eval(if(action="failure", src, null()))) as fail_sources,
+        values(eval(if(action="failure", src, null()))) as fail_src_list,
+        count(eval(action="success")) as successes,
+        max(eval(if(action="failure", event_time, null()))) as last_fail,
+        min(eval(if(action="success" AND LogonType IN (2,3,7,10), event_time, null()))) as success_time,
+        values(eval(if(action="success", src, null()))) as success_src,
+        values(LogonType) as logon_types
+        by TargetUserName
+| where fails>=3 AND successes>=1 AND isnotnull(success_time)
+    AND success_time>=last_fail AND (success_time-last_fail)<=300
+| eval same_source=if(isnotnull(mvfind(fail_src_list, success_src)), 1, 0)
+| eval attack_pattern=case(
+    fail_sources>=5, "distributed_spray",
+    same_source=1, "focused_bruteforce",
+    true(), "mixed")
+| eval breach_gap=success_time-last_fail
+| eval impact=case(
+    attack_pattern="focused_bruteforce" AND same_source=1, 85,
+    attack_pattern="distributed_spray", 80,
+    true(), 70)
+| eval confidence=case(
+    same_source=1 AND fails>=10, 0.90,
+    same_source=1 AND fails>=5, 0.80,
+    fail_sources>=5, 0.75,
+    true(), 0.65)
+| eval risk_score=round(impact*confidence,2)
+| eval risk_object=TargetUserName, risk_object_type="user",
+       risk_detail=attack_pattern.": ".fails." fails from ".fail_sources." src, login in ".round(breach_gap)."s",
+       detection_id="T1110-BRUTEFORCE-SUCCESS", annotations_mitre="T1110"
+| eval _time=success_time
+| fields - last_fail success_time first_fail

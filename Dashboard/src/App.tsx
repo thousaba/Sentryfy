@@ -28,13 +28,7 @@ function App() {
     socket.on('disconnect', () => setConnected(false));
 
     socket.on('new-alert', (alert: RiskAlert) => {
-      setAlerts(prev => {
-        const idx = prev.findIndex(a => a.riskObject === alert.riskObject);
-        if (idx === -1) return [alert, ...prev];
-        const next = [...prev];
-        next[idx] = alert;
-        return next;
-      });
+      setAlerts(prev => [alert, ...prev]);
     });
 
     return () => {
@@ -57,8 +51,8 @@ function App() {
       .sort((a, b) => b.totalRisk - a.totalRisk);
   }, [alerts, severityFilter, search]);
 
-  const deleteAlert = (riskObject: string) => {
-    setAlerts(prev => prev.filter(a => a.riskObject !== riskObject));
+  const deleteAlert = (id: string) => {
+    setAlerts(prev => prev.filter(a => a.id !== id));
   };
 
   return (
@@ -111,7 +105,7 @@ function App() {
 
       <div className="alerts-scroll">
         {visibleAlerts.map(alert => (
-          <AlertCard key={alert.riskObject} alert={alert} onDelete={() => deleteAlert(alert.riskObject)} />
+          <AlertCard key={alert.id} alert={alert} onDelete={() => deleteAlert(alert.id)} />
         ))}
 
         {visibleAlerts.length === 0 && (

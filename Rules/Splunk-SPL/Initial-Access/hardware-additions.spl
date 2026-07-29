@@ -1,0 +1,63 @@
+(index=windows_security EventCode=6416)
+  OR (index=windows_sysmon EventCode=1
+      (Image="*\\powershell.exe" OR Image="*\\pwsh.exe" OR Image="*\\cmd.exe"
+       OR Image="*\\wscript.exe" OR Image="*\\cscript.exe" OR Image="*\\mshta.exe"
+       OR Image="*\\rundll32.exe" OR Image="*\\regsvr32.exe" OR Image="*\\certutil.exe"
+       OR Image="*\\bitsadmin.exe" OR Image="*\\msiexec.exe" OR Image="*\\curl.exe"))
+| eval device_class=case(
+    EventCode=6416 AND match(CompatibleIds,"(?i)Class_03"), "HID",
+    EventCode=6416 AND (match(CompatibleIds,"(?i)Class_08") OR match(DeviceId,"(?i)USBSTOR") OR ClassName IN ("DiskDrive","Volume","WPD")), "Storage",
+    EventCode=6416 AND (match(CompatibleIds,"(?i)Class_02&SubClass_02") OR ClassName IN ("Net","Modem")), "Network",
+    true(), null())
+| eval evt_type=case(EventCode=6416,"device", EventCode=1,"shell", true(),null())
+| where evt_type="shell" OR device_class IN ("HID","Storage","Network")
+| eval shell_image=if(evt_type="shell",Image,null()), shell_cmd=if(evt_type="shell",CommandLine,null())
+| sort 0 Computer _time
+| streamstats time_window=5s
+    last(eval(if(evt_type="device" AND device_class="HID", _time, null()))) as hid_time
+    last(eval(if(evt_type="device" AND device_class="HID", DeviceDescription, null()))) as hid_device
+    last(eval(if(evt_type="device" AND device_class="Storage", _time, null()))) as storage_time
+    last(eval(if(evt_type="device" AND device_class="Storage", DeviceDescription, null()))) as storage_device
+    last(eval(if(evt_type="device" AND device_class="Network", _time, null()))) as net_time
+    last(eval(if(evt_type="device" AND device_class="Network", DeviceDescription, null()))) as net_device
+    by Computer
+| eval dt_hid=if(evt_type="shell" AND isnotnull(hid_time), _time-hid_time, null())
+| eval dt_storage=if(evt_type="shell" AND isnotnull(storage_time), _time-storage_time, null())
+| eval dt_net=if(evt_type="shell" AND isnotnull(net_time), _time-net_time, null())
+| eval hid_injection=if(isnotnull(dt_hid) AND dt_hid>=0 AND dt_hid<=3, 1, 0)
+| eval storage_exec=if(isnotnull(dt_storage) AND dt_storage>=0 AND dt_storage<=5
+    AND match(shell_cmd,"(?i)([d-z]:\\\\|removable|\\\\Device\\\\Harddisk|USBSTOR)"), 1, 0)
+| eval net_activity=if(isnotnull(dt_net) AND dt_net>=0 AND dt_net<=10
+    AND match(shell_cmd,"(?i)(netsh|new-netroute|new-netipaddress|route\s+add|get-netadapter|set-dnsclient)"), 1, 0)
+| where hid_injection=1 OR storage_exec=1 OR net_activity=1 OR (evt_type="device" AND device_class="HID")
+| eval detect_type=case(
+    hid_injection=1, "HID_INJECTION",
+    net_activity=1, "NET_CONFIG",
+    storage_exec=1, "STORAGE_EXEC",
+    device_class="HID", "HID_DEVICE",
+    true(), "OTHER")
+| eval device_used=coalesce(hid_device, storage_device, net_device, DeviceDescription)
+| eval impact=case(
+    detect_type="HID_INJECTION", 90,
+    detect_type="NET_CONFIG", 75,
+    detect_type="STORAGE_EXEC", 60,
+    detect_type="HID_DEVICE", 35,
+    true(), 20)
+| eval confidence=case(
+    detect_type="HID_INJECTION" AND dt_hid<=1, 0.95,
+    detect_type="HID_INJECTION" AND dt_hid<=2, 0.90,
+    detect_type="HID_INJECTION" AND dt_hid<=3, 0.80,
+    detect_type="NET_CONFIG", 0.70,
+    detect_type="STORAGE_EXEC", 0.65,
+    detect_type="HID_DEVICE", 0.60,
+    true(), 0.30)
+| eval risk_score=round(impact*confidence,2)
+| where risk_score>=30
+| stats max(risk_score) as risk_score, values(detect_type) as detect_type,
+        values(device_used) as risk_detail, values(shell_image) as correlated_shell,
+        earliest(dt_hid) as dt_hid, count as event_count,
+        max(_time) as _time
+        by Computer
+| eval risk_object=Computer, risk_object_type="host",
+       detection_id="T1200-HARDWARE-ADD", annotations_mitre="T1200"
+| table _time Computer detect_type risk_detail correlated_shell dt_hid risk_score

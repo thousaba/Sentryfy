@@ -10,4 +10,6 @@ export interface RiskAlert {
   detections:     string[];
   techniqueCount: number;
   techniques:     string[];
+  title:          string;
+  description:    string;
 }

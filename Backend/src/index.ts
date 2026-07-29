@@ -52,6 +52,8 @@ app.post('/api/webhook/splunk', (req: Request, res: Response) => {
   const techniqueCount = Number(result['technique_count']) || 0;
   const detections     = toList(result['detections']);
   const techniques     = toList(result['techniques']);
+  const title          = String(result['detection_id'] ?? '');
+  const description    = String(result['risk_detail'] ?? '');
 
   console.log(`[Splunk Webhook] 🚨 ${riskObject} — risk ${totalRisk}`);
 
@@ -65,6 +67,8 @@ app.post('/api/webhook/splunk', (req: Request, res: Response) => {
     detections,
     techniqueCount,
     techniques,
+    title,
+    description,
   });
 
   res.status(200).send('ok');
