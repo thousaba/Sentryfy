@@ -13,7 +13,7 @@ This document maps the detection rules **currently covered** by the Sentryfy pro
 ## TA0001 — Initial Access
 
 
-| Status | Technique ID | Technique Name | Rule File |
+| Status | Technique ID | Technique Name | SPL File |
 |--------|--------------|----------------|-----------|
 | ✅ | T1566 | Phishing (Suspicious File Creation) | [Phishing SPL](./Rules/Splunk-SPL/Initial-Access/phishing.spl) |
 | ✅ | T1190 | Exploit Public-Facing Application | [Exploit Public App SPL](./Rules/Splunk-SPL/Initial-Access/exploit-public-app.spl) |
@@ -28,7 +28,7 @@ This document maps the detection rules **currently covered** by the Sentryfy pro
 ## TA0002 — Execution
 
 
-| Status | Technique ID | Technique Name | Rule File |
+| Status | Technique ID | Technique Name | SPL File |
 |--------|--------------|----------------|-----------|
 | ✅ | T1059.003 | Windows Command Shell (cmd.exe) | [Windows Command Shell SPL](./Rules/Splunk-SPL/Execution/proccreate.spl) |
 | ⏳ | T1059.005 | Visual Basic (wscript / cscript) | _planned_ |
@@ -43,7 +43,7 @@ This document maps the detection rules **currently covered** by the Sentryfy pro
 ## TA0003 — Persistence
 
 
-| Status | Technique ID | Technique Name | Rule File |
+| Status | Technique ID | Technique Name | SPL File |
 |--------|--------------|----------------|-----------|
 | ✅ | T1098 | Account Manipulation | [Account Manipulation](./Rules/Splunk-SPL/Persistence/account-manipulation.spl) |
 | ✅ | T1053.005 | Scheduled Task | [Scheduled Task SPL](./Rules/Splunk-SPL/Persistence/scheduled-task-v2) |
@@ -60,7 +60,7 @@ This document maps the detection rules **currently covered** by the Sentryfy pro
 ## TA0004 — Privilege Escalation
 
 
-| Status | Technique ID | Technique Name | Rule File |
+| Status | Technique ID | Technique Name | SPL File |
 |--------|--------------|----------------|-----------|
 | ✅ | T1055.002 | Process Injection: Remote Thread (DLL Injection) | [DLL Injection](./Rules/Splunk-SPL/Privilege-Escalation/dll-injection.spl) |
 | ✅ | T1055.012 | Process Injection: Process Hollowing | [Process Hollowing SPL](./Rules/Splunk-SPL/Privilege-Escalation/process-hollowing.spl) |
@@ -76,7 +76,7 @@ This document maps the detection rules **currently covered** by the Sentryfy pro
 ## TA0005 — Defense Evasion
 
 
-| Status | Technique ID | Technique Name | Rule File |
+| Status | Technique ID | Technique Name | SPL File |
 |--------|--------------|----------------|-----------|
 | ✅ | T1562.001 | Disable or Modify Tools (Windows Defender) | [Win-Defender SPL](./Rules/Splunk-SPL/Defense-Evasion/win-defender.spl) |
 | ✅ | T1036.003 | Process Masquerading (svchost.exe) | [Process Masquerading SPL](./Rules/Splunk-SPL/Defense-Evasion/svchost.spl) |
@@ -97,20 +97,20 @@ This document maps the detection rules **currently covered** by the Sentryfy pro
 ## TA0006 — Credential Access
 
 
-| Status | Technique ID | Technique Name | Rule File |
-|--------|--------------|----------------|-----------|
+| Status | Technique ID | Technique Name | SPL File | KQL File |
+|--------|--------------|----------------|-----------|----------|
 | ✅ | T1110 | Brute Force | [Brute Force SPL](./Rules/Splunk-SPL/Credential-Access/brute-force.spl) | [Brute Force KQL](./Rules/Sentinel-KQL/Credential-Access/bruteforce.kql) |
-| ✅ | T1003.001 | OS Credential Dumping: LSASS Memory | [LSASS Memory SPL](./Rules/Splunk-SPL/Credential-Access/lsass-access.spl) |
-| ⏳ | T1555 | Credentials from Password Stores (browsers) | _planned_ |
-| ⏳ | T1558.003 | Kerberoasting | _planned_ |
-| ⏳ | T1552.001 | Unsecured Credentials in Files | _planned_ |
+| ✅ | T1003.001 | OS Credential Dumping: LSASS Memory | [LSASS Memory SPL](./Rules/Splunk-SPL/Credential-Access/lsass-access.spl) | |
+| ⏳ | T1555 | Credentials from Password Stores (browsers) | _planned_ | |
+| ⏳ | T1558.003 | Kerberoasting | _planned_ | |
+| ⏳ | T1552.001 | Unsecured Credentials in Files | _planned_ | |
 
 ---
 
 ## TA0007 — Discovery
 
 
-| Status | Technique ID | Technique Name | Rule File |
+| Status | Technique ID | Technique Name | SPL File |
 |--------|--------------|----------------|-----------|
 | ⏳ | T1087.001 | Account Discovery: Local Account | _planned_ |
 | ⏳ | T1018 | Remote System Discovery | _planned_ |
@@ -121,7 +121,7 @@ This document maps the detection rules **currently covered** by the Sentryfy pro
 
 ### TA0008 — Lateral Movement
 
-| Status | Technique ID | Technique Name | Rule File |
+| Status | Technique ID | Technique Name | SPL File |
 |--------|--------------|----------------|-----------|
 | ✅ | T1021.002 | Remote Services: SMB/Windows Admin Share | [Admin Share SPL](./Rules/Splunk-SPL/Lateral-Movement/admin-shares.spl) |
 | ✅ | T1570 | Lateral Tool Transfer | [Lateral Tool Transfer SPL](./Rules/Splunk-SPL/Lateral-Movement/lateral-tool-transfer.spl) |
@@ -131,11 +131,11 @@ This document maps the detection rules **currently covered** by the Sentryfy pro
 
 ### TA0011 — Command and Control
 
-| Status | Technique ID | Technique Name | Rule File |
+| Status | Technique ID | Technique Name | SPL File |
 |--------|--------------|----------------|-----------|
 | ✅ | T1219 | Remote Access Tools | [Remote Access Tools SPL](./Rules/Splunk-SPL/Command-and-Control/remote-access-tools.spl) |
 | ✅ | T1071.004 | Application Layer Protocol: DNS Tunneling | [DNS Tunneling SPL](./Rules/Splunk-SPL/Command-and-Control/dns-tunneling.spl) |
-| ✅ | T1071.004 + T1048.003 DNS Tunneling (Network-Based + Process Correlation) [DNS Tunneling Correlation SPL](./Rules/Splunk-SPL/Command-and-Control/dns-tunneling-correlation.spl) |
+| ✅ | T1071.004 + T1048.003 | DNS Tunneling (Network-Based + Process Correlation) | [DNS Tunneling Correlation SPL](./Rules/Splunk-SPL/Command-and-Control/dns-tunneling-correlation.spl) |
 | ⏳ | T1572 | Protocol Tunneling | _planned_ |
 
 
