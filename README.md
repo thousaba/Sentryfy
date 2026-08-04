@@ -100,7 +100,8 @@ This document maps the detection rules **currently covered** by the Sentryfy pro
 | Status | Technique ID | Technique Name | SPL File | KQL File |
 |--------|--------------|----------------|-----------|----------|
 | ✅ | T1110 | Brute Force | [Brute Force SPL](./Rules/Splunk-SPL/Credential-Access/brute-force.spl) | [Brute Force KQL](./Rules/Sentinel-KQL/Credential-Access/bruteforce.kql) |
-| ✅ | T1003.001 | OS Credential Dumping: LSASS Memory | [LSASS Memory SPL](./Rules/Splunk-SPL/Credential-Access/lsass-access.spl) | |
+| ✅ | T1110.003 | Password Spraying | [Password Spraying SPL](./Rules/Splunk-SPL/Credential-Access/password-spraying.spl) | [Password Spraying KQL](./Rules/Sentinel-KQL/Credential-Access/password-spraying.kql) |
+| ✅ | T1003.001 | OS Credential Dumping: LSASS Memory | [LSASS Memory SPL](./Rules/Splunk-SPL/Credential-Access/lsass-access.spl) |
 | ⏳ | T1555 | Credentials from Password Stores (browsers) | _planned_ | |
 | ⏳ | T1558.003 | Kerberoasting | _planned_ | |
 | ⏳ | T1552.001 | Unsecured Credentials in Files | _planned_ | |
