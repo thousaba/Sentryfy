@@ -15,7 +15,7 @@ This document maps the detection rules **currently covered** by the Sentryfy pro
 
 | Status | Technique ID | Technique Name | SPL File |
 |--------|--------------|----------------|-----------|
-| ✅ | T1566 | Phishing (Suspicious File Creation) | [Phishing SPL](./Rules/Splunk-SPL/Initial-Access/phishing.spl) |
+| ✅ | T1566 | Phishing | [Phishing SPL](./Rules/Splunk-SPL/Initial-Access/phishing.spl) |
 | ✅ | T1190 | Exploit Public-Facing Application | [Exploit Public App SPL](./Rules/Splunk-SPL/Initial-Access/exploit-public-app.spl) |
 | ✅ | T1200 | Hardware Additions (BadUSB / HID) | [Hardware Additions SPL](./Rules/Splunk-SPL/Initial-Access/hardware-additions.spl) |
 | ✅ | T1078 | Valid Accounts (login anomaly) | [Valid Accounts](./Rules/Splunk-SPL/Initial-Access/valid-accounts.spl) |

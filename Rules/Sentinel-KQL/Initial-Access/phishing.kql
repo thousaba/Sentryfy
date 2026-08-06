@@ -1,0 +1,58 @@
+let proc=Sysmon
+| where EventID==1
+| where Image matches regex @"(?i)\\(powershell|pwsh|cmd|mshta|wscript|cscript|rundll32|certutil|bitsadmin)\.exe$"
+| extend delivery_method=case(
+    ParentImage matches regex @"(?i)\\explorer\.exe$","clickfix_paste",
+    ParentImage matches regex @"(?i)\\cmd\.exe$" and CommandLine matches regex @"(?i)(-enc|-e\s|-w\s+hidden|powershell|start\s+/min)","cmd_cascade",
+    ParentImage matches regex @"(?i)\\(chrome|msedge|firefox|brave)\.exe$","browser_driveby",
+    ""),
+    clickfix_cmd=case(
+    CommandLine matches regex @"(?i)(downloadstring|net\.webclient|invoke-webrequest|iwr).*https?://","proc_download",
+    CommandLine matches regex @"(?i)(certutil|bitsadmin).*https?://","lolbin_download",
+    CommandLine matches regex @"(?i)-enc","encoded_command",
+    ""),
+    spawn=iff(CommandLine matches regex @"(?i)(-w\s+hidden|-windowstyle\s+hidden|-executionpolicy\s+bypass|-nop|-enc|-e\s|downloadstring|iwr|invoke-webrequest)",1,0)
+| project Computer,proc_time=TimeGenerated,ParentImage,Image,CommandLine,delivery_method,clickfix_cmd,spawn;
+let ps=PowerShellEvents
+| where FullText has_any("downloadstring","downloadfile","net.webclient","invoke-webrequest","iwr","iex","invoke-expression")
+| extend ps_clickfix_cmd="dynamic_exec"
+| project Computer,ps_time=TimeGenerated,ps_clickfix_cmd;
+let net=Sysmon
+| where EventID==3
+| where Image matches regex @"(?i)\\(powershell|mshta|certutil)\.exe$"
+| where isnotempty(DestinationIp)
+| extend external_conn=iff(DestinationIp=="192.168.56.102" or not(ipv4_is_private(DestinationIp)),1,0)
+| where external_conn==1
+| project Computer,net_time=TimeGenerated,DestinationIp;
+proc
+| join kind=leftouter ps on Computer
+| where isempty(ps_time) or ps_time between(proc_time-30s..proc_time+10m)
+| join kind=leftouter net on Computer
+| where isempty(net_time) or net_time between(proc_time-30s..proc_time+10m)
+| extend combined_cmd = coalesce(clickfix_cmd, ps_clickfix_cmd)
+| summarize 
+    has_spawn=max(spawn),
+    has_cmd=max(iff(isnotempty(combined_cmd),1,0)),
+    has_network=max(iff(isnotempty(DestinationIp),1,0)),
+    indicators=make_set_if(combined_cmd, isnotempty(combined_cmd)), 
+    delivery_method=take_any(delivery_method),
+    dest_ip=make_set(DestinationIp),
+    first_seen=min(proc_time) 
+    by Computer
+| extend signal_count=has_spawn+has_cmd+has_network
+| where has_spawn==1 or has_cmd==1
+| extend impact=iff(delivery_method=="browser_driveby",75,65)
+| extend confidence=case(
+    signal_count>=3,0.95,
+    signal_count==2,0.90,
+    has_cmd==1,0.85,
+    has_spawn==1,0.75,
+    0.60)
+| extend risk_score=round(impact*confidence,2)
+| extend Severity=case(
+    risk_score>=70,"High",
+    risk_score>=50,"Medium",
+    risk_score>=30,"Low",
+    "Informational")
+| project Severity,Computer,first_seen,delivery_method,indicators,dest_ip,has_spawn,has_cmd,has_network,signal_count,risk_score
+| order by first_seen desc

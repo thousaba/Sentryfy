@@ -1,0 +1,56 @@
+(index=windows_powershell EventCode=4104)
+  OR (index=windows_sysmon EventCode=1 
+      (Image="*\\powershell.exe" OR Image="*\\pwsh.exe" OR Image="*\\cmd.exe" 
+       OR Image="*\\mshta.exe" OR Image="*\\wscript.exe" OR Image="*\\cscript.exe"
+       OR Image="*\\rundll32.exe" OR Image="*\\certutil.exe" OR Image="*\\bitsadmin.exe"))
+  OR (index=windows_sysmon EventCode=3 
+      (Image="*\\powershell.exe" OR Image="*\\mshta.exe" OR Image="*\\certutil.exe"))
+| eval evt=case(EventCode=4104,"script", EventCode=1,"proc", EventCode=3,"network", true(),null())
+| eval clickfix_cmd=case(
+    evt="script" AND match(ScriptBlockText,"(?i)(downloadstring|downloadfile|net\.webclient|iwr|invoke-webrequest).*https?://"), "download_exec",
+    evt="script" AND match(ScriptBlockText,"(?i)(iex|invoke-expression|\.invoke\(|&\s*\()"), "dynamic_exec",
+    evt="proc" AND match(CommandLine,"(?i)(-enc|-encodedcommand|-e\s+[A-Za-z0-9+/]{20,})"), "encoded_command",
+    evt="proc" AND match(Image,"(?i)mshta\.exe$") AND match(CommandLine,"(?i)https?://"), "mshta_remote",
+    evt="proc" AND match(CommandLine,"(?i)(downloadstring|net\.webclient|iwr|invoke-webrequest|urlcache).*https?://"), "proc_download",
+    evt="proc" AND match(CommandLine,"(?i)(certutil|bitsadmin).*https?://"), "lolbin_download",
+    true(), null())
+| eval delivery=case(
+    evt="proc" AND match(ParentImage,"(?i)\\\\explorer\.exe$"), "clickfix_paste",
+    evt="proc" AND match(ParentImage,"(?i)\\\\cmd\.exe$") AND match(CommandLine,"(?i)(-enc|-e\s|-w\s+hidden|powershell|start\s+/min)"), "cmd_cascade",
+    evt="proc" AND match(ParentImage,"(?i)\\\\(chrome|msedge|firefox|brave)\.exe$"), "browser_driveby",
+    true(), null())
+| eval spawn=if(evt="proc" AND isnotnull(delivery)
+    AND match(CommandLine,"(?i)(-w\s+hidden|-windowstyle\s+hidden|-executionpolicy\s+bypass|-nop|-enc|-e\s|mshta.*http|start\s+/min|downloadstring|iwr)"), 1, 0)
+| eval external_conn=if(evt="network" 
+    AND (DestinationIp="192.168.56.102" 
+         OR NOT match(DestinationIp,"^(10\.|127\.|169\.254\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.)")), 1, 0)
+| sort 0 Computer _time
+| streamstats time_window=10m 
+    max(eval(if(evt="proc" AND spawn=1, 1, 0))) as recent_spawn,
+    max(eval(if(isnotnull(clickfix_cmd), 1, 0))) as recent_cmd
+    by Computer
+| eval has_network=if(evt="network" AND external_conn=1 AND (recent_spawn=1 OR recent_cmd=1), 1, 0)
+| eval bad_time=if(isnotnull(clickfix_cmd) OR spawn=1 OR (evt="network" AND external_conn=1), _time, null())
+| stats max(eval(if(isnotnull(clickfix_cmd),1,0))) as has_cmd,
+        max(spawn) as has_spawn,
+        max(has_network) as has_network,
+        values(clickfix_cmd) as indicators,
+        values(delivery) as delivery_method,
+        values(DestinationIp) as dest_ip,
+        max(bad_time) as _time
+        by Computer
+| where has_cmd=1 OR has_spawn=1
+| eval signal_count=has_cmd+has_spawn+has_network
+| eval impact=case(delivery_method="browser_driveby", 75, true(), 65)
+| eval confidence=case(
+    signal_count>=3, 0.95,
+    signal_count=2, 0.90,
+    has_cmd=1, 0.85,
+    has_spawn=1, 0.75,
+    true(), 0.60)
+| eval risk_score=round(impact*confidence,2)
+| eval risk_object=Computer, risk_object_type="host",
+       detection_id="T1566-CLICKFIX", annotations_mitre="T1566.002,T1204.004"
+| where risk_score>=30
+| fields - _raw
+| collect index = risk
