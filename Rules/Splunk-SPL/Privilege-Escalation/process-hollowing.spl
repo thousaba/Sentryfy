@@ -1,5 +1,28 @@
-index=windows sourcetype="XmlWinEventLog"
-EventCode=1
-Image="*\\notepad.exe"
-NOT ParentImage IN ("*\\explorer.exe", "*\\services.exe", "*\\svchost.exe", "*\\winlogon.exe", "*\\powershell.exe", "*\\Notepad.exe")
-| table _time, Image, ParentImage, ProcessId, CommandLine
+index=windows_sysmon (EventCode=25 OR EventCode=1)
+| eval Image=replace(replace(Image,"&lt;","<"),"&gt;",">")
+| stats
+    values(eval(if(EventCode==25, Type,  null()))) as tamper_type
+    values(eval(if(EventCode==25, Image, null()))) as tamper_image
+    values(eval(if(EventCode==1,  Image, null()))) as proc_image
+    values(ParentImage)    as ParentImage
+    values(CommandLine)    as CommandLine
+    values(Hashes)         as Hashes
+    values(IntegrityLevel) as IntegrityLevel
+    values(User)           as User
+    max(_time)             as _time
+    by ProcessGuid, Computer
+| where isnotnull(tamper_type)                    
+| eval resolved_image = coalesce(proc_image, tamper_image)   
+| eval src_lower    = lower(resolved_image)
+| eval parent_lower = lower(ParentImage)
+| eval is_allowlisted = if(
+      match(src_lower,    "azureconnectedmachineagent.*gc_worker\.exe$")
+   OR match(parent_lower, "gc_arc_service\.exe$"), 1, 0)
+| where is_allowlisted=0
+| eval confidence = case(
+      resolved_image=="<unknown process>" AND User=="NT AUTHORITY\\SYSTEM", 0.40,
+      resolved_image=="<unknown process>", 0.60,
+      1==1, 0.80)
+| eval impact=60, risk_score=impact*confidence
+| table _time, Computer, User, ParentImage, resolved_image, CommandLine, tamper_type, Hashes, IntegrityLevel, confidence, risk_score
+| sort - risk_score, - _time

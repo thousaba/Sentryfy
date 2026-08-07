@@ -6,7 +6,7 @@ This document maps the detection rules **currently covered** by the Sentryfy pro
 
 **Legend:**
 - ✅ Covered — rule written and tested in lab
-- ⏳ Medium priority — on the roadmap, coming later
+- ⏳ Planned — on the roadmap, coming later
 
 ---
 

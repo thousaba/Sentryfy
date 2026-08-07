@@ -28,36 +28,45 @@
 | eval storage_exec=if(isnotnull(dt_storage) AND dt_storage>=0 AND dt_storage<=5
     AND match(shell_cmd,"(?i)([d-z]:\\\\|removable|\\\\Device\\\\Harddisk|USBSTOR)"), 1, 0)
 | eval net_activity=if(isnotnull(dt_net) AND dt_net>=0 AND dt_net<=10
-    AND match(shell_cmd,"(?i)(netsh|new-netroute|new-netipaddress|route\s+add|get-netadapter|set-dnsclient)"), 1, 0)
+    AND match(shell_cmd,"(?i)(netsh|new-netroute|new-netipaddress|route\\s+add|get-netadapter|set-dnsclient)"), 1, 0)
 | where hid_injection=1 OR storage_exec=1 OR net_activity=1 OR (evt_type="device" AND device_class="HID")
 | eval detect_type=case(
     hid_injection=1, "HID_INJECTION",
     net_activity=1, "NET_CONFIG",
     storage_exec=1, "STORAGE_EXEC",
-    device_class="HID", "HID_DEVICE",
-    true(), "OTHER")
+    evt_type="device" AND device_class="HID", "HID_DEVICE",
+    true(), null())
+| where isnotnull(detect_type)
 | eval device_used=coalesce(hid_device, storage_device, net_device, DeviceDescription)
+| eval dt=case(
+    detect_type="HID_INJECTION", dt_hid,
+    detect_type="NET_CONFIG", dt_net,
+    detect_type="STORAGE_EXEC", dt_storage,
+    true(), null())
 | eval impact=case(
     detect_type="HID_INJECTION", 90,
     detect_type="NET_CONFIG", 75,
     detect_type="STORAGE_EXEC", 60,
-    detect_type="HID_DEVICE", 35,
-    true(), 20)
+    detect_type="HID_DEVICE", 35)
 | eval confidence=case(
-    detect_type="HID_INJECTION" AND dt_hid<=1, 0.95,
-    detect_type="HID_INJECTION" AND dt_hid<=2, 0.90,
-    detect_type="HID_INJECTION" AND dt_hid<=3, 0.80,
+    detect_type="HID_INJECTION" AND dt<=1, 0.95,
+    detect_type="HID_INJECTION" AND dt<=2, 0.90,
+    detect_type="HID_INJECTION", 0.80,
     detect_type="NET_CONFIG", 0.70,
     detect_type="STORAGE_EXEC", 0.65,
-    detect_type="HID_DEVICE", 0.60,
-    true(), 0.30)
+    detect_type="HID_DEVICE", 0.60)
 | eval risk_score=round(impact*confidence,2)
-| where risk_score>=30
-| stats max(risk_score) as risk_score, values(detect_type) as detect_type,
-        values(device_used) as risk_detail, values(shell_image) as correlated_shell,
-        earliest(dt_hid) as dt_hid, count as event_count,
+| eval score_floor=if(detect_type="HID_DEVICE", 20, 30)
+| where risk_score>=score_floor
+| stats max(risk_score) as risk_score,
+        min(dt) as dt_sec,
+        values(shell_image) as correlated_shell,
+        count as event_count,
         max(_time) as _time
-        by Computer
+        by Computer, detect_type, device_used
+| rename device_used as risk_detail
 | eval risk_object=Computer, risk_object_type="host",
        detection_id="T1200-HARDWARE-ADD", annotations_mitre="T1200"
-| table _time Computer detect_type risk_detail correlated_shell dt_hid risk_score
+| eval severity=case(risk_score>=70,"high", risk_score>=50,"medium", true(),"low")
+| sort - risk_score
+| table _time Computer detect_type risk_detail correlated_shell dt_sec event_count risk_score severity

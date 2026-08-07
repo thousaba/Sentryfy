@@ -1,0 +1,74 @@
+let lookback     = 1h;
+let corr_win_s   = 5.0;
+let inject_max_s = 3.0;
+let score_floor  = 30;
+let WL = _GetWatchlist('TrustedProcesses') | project Process;
+let ShellSet = dynamic([
+    "powershell.exe","pwsh.exe","cmd.exe","wscript.exe","cscript.exe","mshta.exe","certutil.exe","bitsadmin.exe","msiexec.exe","curl.exe","rundll32.exe","regsvr32.exe"
+]);
+let Devices =
+    SecurityEvent
+    | where TimeGenerated > ago(lookback)
+    | where EventID == 6416
+    | extend CompatibleIds = tostring(extract(@'Name="CompatibleIds">([^<]*)', 1, EventData)),
+             ClassName     = tostring(extract(@'Name="ClassName">([^<]*)', 1, EventData)),
+             DeviceDesc    = tostring(extract(@'Name="DeviceDescription">([^<]*)', 1, EventData)),
+             DeviceId      = tostring(extract(@'Name="DeviceId">([^<]*)', 1, EventData))
+    | extend device_class = case(
+        CompatibleIds matches regex @"\bClass_03\b" or ClassName == "HIDClass",   "HID",
+        CompatibleIds matches regex @"\bClass_08\b" or CompatibleIds has "USBSTOR","Storage",
+        CompatibleIds matches regex @"\bClass_02\b",                              "Network",
+                                                                                  "Other")
+    | where device_class != "Other"
+    | summarize DevTime = min(TimeGenerated), DeviceDesc = any(DeviceDesc), DeviceId = any(DeviceId)
+        by Computer, device_class, bin(TimeGenerated, 10s)
+    | project Computer, device_class, DeviceDesc, DeviceId, DevTime;
+let Procs =
+    Sysmon
+    | where TimeGenerated > ago(lookback)
+    | where EventID == 1
+    | where Image !in~ (WL)                   
+    | extend ProcName = tolower(extract(@"([^\\]+)$", 1, Image))
+    | project ProcTime    = TimeGenerated,Computer,ProcName,ProcPath = Image,ParentImage,CommandLine,ProcessGuid,ProcessId,ParentProcessGuid,ParentProcessId,ProcUser = User,LogonId,TerminalSessionId;
+Devices
+| join kind=inner hint.strategy=broadcast (Procs) on Computer
+| extend dt = todouble(datetime_diff('millisecond', ProcTime, DevTime)) / 1000.0
+| where dt >= 0 and dt <= corr_win_s
+| extend from_removable = ProcPath matches regex @"(?i)^[D-Z]:\\" or CommandLine has "USBSTOR"
+| extend detect_type = case(
+    device_class == "HID"     and ProcName in~ (ShellSet) and dt <= inject_max_s, "HID_INJECTION",
+    device_class == "Storage" and from_removable,                                 "STORAGE_EXEC",
+    device_class == "Network" and (CommandLine has "netsh"
+                                or CommandLine has "route "
+                                or CommandLine has "Get-NetAdapter"),             "NET_CONFIG",
+                                                                                  "")
+| where isnotempty(detect_type)
+| extend impact = case(detect_type == "HID_INJECTION", 90,
+                       detect_type == "NET_CONFIG",    75,
+                                                       60)
+| extend confidence = case(dt <= 1.0, 0.95,
+                           dt <= 2.0, 0.90,
+                                      0.80)
+| extend risk_score = impact * confidence
+| where risk_score >= score_floor
+| extend Severity = case(risk_score >= 70, "High",
+                         risk_score >= 50, "Medium",
+                                           "Low")
+| summarize arg_min(dt, *) by Computer, DevTime, detect_type
+| join kind=leftouter (
+    PowerShellEvents
+    | where TimeGenerated > ago(lookback)
+    | where EventID == 4104
+    | project PSTime = TimeGenerated, Computer, ScriptBlock
+  ) on Computer
+| extend ScriptBlock = iff(PSTime between (ProcTime .. ProcTime + 30s), ScriptBlock, "")
+| summarize ScriptBlocks = make_set_if(ScriptBlock, isnotempty(ScriptBlock), 5)
+    by Computer, DevTime, ProcTime, dt, detect_type, device_class, DeviceDesc,
+       ParentImage, ProcPath, CommandLine, ProcessGuid, ProcessId,
+       ParentProcessGuid, ParentProcessId, ProcUser, LogonId, TerminalSessionId,
+       impact, confidence, risk_score, Severity
+| project Computer, DevTime, ProcTime, dt, detect_type, Severity, risk_score,
+          device_class, DeviceDesc, ProcUser, LogonId,
+          ParentImage, ParentProcessGuid, ProcPath, ProcessGuid, ProcessId,
+          CommandLine, ScriptBlocks, impact, confidence
+| order by risk_score desc
