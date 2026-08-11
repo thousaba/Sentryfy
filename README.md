@@ -64,7 +64,7 @@ This document maps the detection rules **currently covered** by the Sentryfy pro
 |--------|--------------|----------------|-----------|----------|
 | ✅ | T1055.002 | Process Injection: Remote Thread (DLL Injection) | [DLL Injection SPL](./Rules/Splunk-SPL/Privilege-Escalation/dll-injection.spl) | [DLL Injection KQL](./Rules/Sentinel-KQL/Privilege-Escalation/dll-injection.kql) |
 | ✅ | T1055.012 | Process Injection: Process Hollowing | [Process Hollowing SPL](./Rules/Splunk-SPL/Privilege-Escalation/process-hollowing.spl) | [Process Hollowing KQL](./Rules/Sentinel-KQL/Privilege-Escalation/process-hollowing.kql) |
-| ⏳ | T1055.004 | Process Injection: APC (Early Bird) | _planned_ |
+| ✅ | T1055.004 | Process Injection: APC + Thread Hijacking | [Threadless SPL](./Rules/Splunk-SPL/Privilege-Escalation/threadless.spl) | [Threadless KQL](./Rules/Sentinel-KQL/Privilege-Escalation/threadless.kql) |
 | ✅ | T1068 | Exploitation for Privilege Escalation (BYOVD) | [BYOVD SPL](./Rules/Splunk-SPL/Privilege-Escalation/byovd.spl) |
 | ✅ | T1548.002 | Bypass User Account Control (fodhelper) | [Bypass UAC SPL](./Rules/Splunk-SPL/Privilege-Escalation/uac-bypass.spl) |
 | ⏳ | T1134.001 | Access Token Manipulation: Token Impersonation | _planned_ |
