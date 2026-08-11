@@ -1,5 +1,16 @@
-index=* sourcetype="XmlWinEventLog" EventID=8 
-| eval TargetImage_Lower=lower(TargetImage), SourceImage_Lower=lower(SourceImage)
-| search TargetImage_Lower="*notepad.exe" 
-| where NOT (SourceImage_Lower LIKE "%\\windows\\system32\\%" OR SourceImage_Lower LIKE "%\\windows\\syswow64\\%")
-| table _time, host, SourceImage, TargetImage, StartFunction, StartModule, SourceUser
+index=windows_sysmon EventCode=8
+| eval src=lower(SourceImage), tgt=lower(TargetImage)
+| eval is_cross  = if(src!=tgt, 1, 0)
+| eval is_kernel = if(match(StartAddress,"(?i)^0xffff"), 1, 0)
+| eval src_sys   = if(match(src,"^c:\\\\windows\\\\system32\\\\"), 1, 0)
+| eval sm_empty  = if(StartModule=="-" OR StartModule=="" OR isnull(StartModule), 1, 0)
+| eval sig_reflective = if(sm_empty==1 AND is_cross==1 AND is_kernel==0 AND src_sys==0, 1, 0)
+| eval sig_loadlib = if(StartFunction IN ("LoadLibraryA","LoadLibraryW") AND is_cross==1, 1, 0)
+| where sig_reflective==1 OR sig_loadlib==1
+| eval detect_type = case(sig_reflective==1, "REFLECTIVE_INJECTION", sig_loadlib==1, "LOADLIB_INJECTION")
+| eval confidence = case(sig_reflective==1, 0.85, sig_loadlib==1, 0.75, 1==1, 0.50)
+| eval impact = 60
+| eval risk_score = impact * confidence
+| where risk_score >= 30
+| table _time, detect_type, SourceImage, TargetImage, StartFunction, StartModule, StartAddress, ProcessGuid, TargetProcessGuid, confidence, risk_score
+| sort - risk_score, - _time

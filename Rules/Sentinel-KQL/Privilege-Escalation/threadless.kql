@@ -1,0 +1,20 @@
+Sysmon
+| where EventID == 10
+| extend src = tolower(SourceImage), tgt = tolower(TargetImage), ga = tolower(GrantedAccess)
+| extend is_cross = iff(src != tgt, 1, 0)
+| extend hi_access = iff(ga in ("0x1fffff","0x1f0fff","0x1f3fff","0x1f1fff"), 1, 0)
+| extend unbacked_call = iff(CallTrace has "UNKNOWN(", 1, 0)
+| extend is_trusted = iff(
+       src matches regex @"\\(splunkd|csrss|msmpeng|code)\.exe$"
+    or src has @"\windows\system32\", 1, 0)
+| where is_cross == 1 and hi_access == 1 and unbacked_call == 1 and is_trusted == 0
+| extend detect_type = "THREADLESS_PROCESS_ACCESS"
+| extend confidence = iff(hi_access == 1 and unbacked_call == 1, 0.75, 0.50)
+| extend impact = 60
+| extend risk_score = impact * confidence
+| where risk_score >= 30
+| extend Severity = case(risk_score >= 45, "High", risk_score >= 36, "Medium", "Low")
+| project TimeGenerated, detect_type, Severity, risk_score, confidence,
+          SourceImage, TargetImage, GrantedAccess, CallTrace,
+          SourceProcessGuid, TargetProcessGuid
+| order by risk_score desc, TimeGenerated desc

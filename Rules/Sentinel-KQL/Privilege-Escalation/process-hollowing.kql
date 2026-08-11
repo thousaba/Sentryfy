@@ -1,0 +1,34 @@
+let TrustedProcs = _GetWatchlist('TrustedProcesses') | project TrustedImage = tolower(Process);
+let Tamper =
+    Sysmon
+    | where EventID == 25
+    | project TamperTime = TimeGenerated, Computer, ProcessGuid,
+              tamper_image = Image,
+              TamperType = column_ifexists("Type",""),
+              TamperUser = column_ifexists("User","");
+let Proc =
+    Sysmon
+    | where EventID == 1
+    | project ProcessGuid, proc_image = Image,
+              ParentImage, CommandLine,
+              Hashes = column_ifexists("Hashes",""),
+              IntegrityLevel = column_ifexists("IntegrityLevel","");
+Tamper
+| join kind=leftouter (Proc) on ProcessGuid
+| extend resolved_image = iff(tamper_image == "<unknown process>" or isempty(tamper_image), proc_image, tamper_image)
+| extend resolved_image = iff(isempty(resolved_image), "<unknown process>", resolved_image)
+| extend ri_lower = tolower(resolved_image)
+| extend is_mingw = ri_lower has "winlibs" and ri_lower has "mingw64"
+| extend is_watchlisted = ri_lower in (TrustedProcs)
+| extend is_allowed = iff(is_watchlisted or is_mingw, 1, 0)
+| where is_allowed == 0
+| extend is_unknown = iff(resolved_image == "<unknown process>", 1, 0)
+| extend is_system = iff(TamperUser has "SYSTEM", 1, 0)
+| extend is_smss = iff(ri_lower endswith "smss.exe", 1, 0)
+| extend confidence = case(is_smss == 1 and is_system == 1, 0.40, is_unknown == 1 and is_system == 1, 0.40, is_unknown == 1, 0.60, 0.80)
+| extend impact = 60
+| extend risk_score = impact * confidence
+| where risk_score >= 30
+| extend Severity = case(risk_score >= 48, "High", risk_score >= 36, "Medium", "Low")
+| project TamperTime, resolved_image, TamperType, TamperUser, ParentImage, CommandLine, Hashes, IntegrityLevel, is_unknown, confidence, risk_score, Severity, ProcessGuid
+| order by risk_score desc, TamperTime desc

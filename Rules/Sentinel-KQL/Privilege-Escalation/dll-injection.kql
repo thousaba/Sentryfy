@@ -1,0 +1,23 @@
+let lookback = 24h;
+Sysmon
+| where TimeGenerated > ago(lookback)
+| where EventID == 8
+| extend src = tolower(SourceImage), tgt = tolower(TargetImage)
+| extend is_cross  = iff(src != tgt, 1, 0)
+| extend is_kernel = iff(StartAddress startswith "0xFFFF" or StartAddress startswith "0xffff", 1, 0)
+| extend src_sys   = iff(src startswith @"c:\windows\system32\", 1, 0)
+| extend sm_empty  = iff(StartModule == "-" or isempty(StartModule), 1, 0)
+| extend sig_reflective = iff(sm_empty == 1 and is_cross == 1 and is_kernel == 0 and src_sys == 0, 1, 0)
+| extend sig_loadlib    = iff(StartFunction in ("LoadLibraryA","LoadLibraryW") and is_cross == 1, 1, 0)
+| where sig_reflective == 1 or sig_loadlib == 1
+| extend detect_type = case(sig_reflective == 1, "SUSPICIOUS_UNBACKED_THREAD",
+                            sig_loadlib == 1,     "LOADLIB_INJECTION", "")
+| extend confidence = case(sig_reflective == 1, 0.85, sig_loadlib == 1, 0.75, 0.50)
+| extend impact = 60
+| extend risk_score = impact * confidence
+| where risk_score >= 30
+| extend Severity = case(risk_score >= 50, "High", risk_score >= 40, "Medium", "Low")
+| project TimeGenerated, detect_type, Severity, risk_score, confidence,
+          SourceImage, TargetImage, StartFunction, StartModule, StartAddress,
+          SourceProcessGuid, TargetProcessGuid
+| order by risk_score desc, TimeGenerated desc
