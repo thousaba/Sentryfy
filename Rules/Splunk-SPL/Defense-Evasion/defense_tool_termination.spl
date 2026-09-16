@@ -1,0 +1,24 @@
+| tstats `security_content_summariesonly` values(Processes.process) as process min(_time) as firstTime max(_time) as lastTime 
+FROM datamodel=Endpoint.Processes
+WHERE (
+        (`process_net` OR `process_sc`) Processes.process="* stop *"
+      )
+      OR Processes.process="*Stop-Service *"
+      OR Processes.process_name="taskkill.exe"
+BY Processes.dest Processes.process Processes.process_name Processes.parent_process_name Processes.parent_process_path Processes.user
+| `drop_dm_object_name(Processes)`
+| rex field=process "(?i)stop\s+\"?(?<target>[^\s\"]+)"
+| rex field=process "(?i)/im\s+\"?(?<target>[^\s\"]+)"
+| lookup benign_stop_targets.csv target OUTPUT target as is_baseline
+| lookup trusted_dev_parents_lookup path_pattern AS parent_process_path OUTPUT comment AS trusted_parent_comment
+| eval is_trusted_parent=if(isnotnull(trusted_parent_comment), 1, 0)
+| eval is_security_tool=if(match(target, "(?i)(WinDefend|MsMpEng|Sysmon|wscsvc|SepMasterService|mfevtps|ekrn|avpsvc)"), 1, 0)
+| eval is_defender_self_action=if(parent_process_name="MsMpEng.exe" AND user="SYSTEM", 1, 0)
+| where (is_security_tool=1 OR isnull(is_baseline)) AND is_defender_self_action=0
+| eval risk_score=case(
+      is_security_tool=1, 80,
+      isnull(target) AND is_trusted_parent=1, 5,
+      isnull(target), 30,
+      isnull(is_baseline) AND is_trusted_parent=1, 10,
+      isnull(is_baseline), 30,
+      1=1, 10)

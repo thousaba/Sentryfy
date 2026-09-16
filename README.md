@@ -78,10 +78,9 @@ This document maps the detection rules **currently covered** by the Sentryfy pro
 
 | Status | Technique ID | Technique Name | SPL File | KQL File |
 |--------|--------------|----------------|-----------|----------|
-| ✅ | T1562.001 | Disable or Modify Tools (Windows Defender) | [Win-Defender SPL](./Rules/Splunk-SPL/Defense-Evasion/win-defender.spl) |
+| ✅ | T1562.001 | Disable or Modify Tools (Windows Defender) | [Defense Tool Termination SPL](./Rules/Splunk-SPL/Defense-Evasion/defense_tool_termination.spl) |
 | ✅ | T1036.003 | Process Masquerading (svchost.exe) | [Process Masquerading SPL](./Rules/Splunk-SPL/Defense-Evasion/svchost.spl) |
 | ✅ | T1036.008 | Masquerading: Masquerade File Type | [Masquerading SPL](./Rules/Splunk-SPL/Defense-Evasion/masquerade-file-type.spl) |
-| ✅ | T1562.001 | Disable or Modify Tools (PPL / LSA Protection) | [PPL Disabled SPL](./Rules/Splunk-SPL/Defense-Evasion/ppl-disabled.spl) |
 | ✅ | T1134.004 | Parent PID Spoofing | [PPID Spoofing SPL](./Rules/Splunk-SPL/Defense-Evasion/ppid-spoof.spl) |
 | ✅ | T1218.005 | Mshta abuse | [Mshta Abuse SPL](./Rules/Splunk-SPL/Defense-Evasion/system_binary_proxy_execution.spl) |
 | ⏳ | T1070.001 | Clear Windows Event Logs | _planned_ |
