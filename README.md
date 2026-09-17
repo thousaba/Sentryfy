@@ -31,6 +31,7 @@ This document maps the detection rules **currently covered** by the Sentryfy pro
 | Status | Technique ID | Technique Name | SPL File | KQL File |
 |--------|--------------|----------------|-----------|----------|
 | ✅ | T1059.003 | Windows Command Shell (cmd.exe) | [Windows Command Shell SPL](./Rules/Splunk-SPL/Execution/proccreate.spl) |
+| ✅ | T1204.002 | User Execution: Malicious File | [Malicious File SPL](./Rules/Splunk-SPL/Execution/malicious-file.spl) |
 | ⏳ | T1059.005 | Visual Basic (wscript / cscript) | _planned_ |
 | ⏳ | T1059.007 | JavaScript | _planned_ |
 | ⏳ | T1047 | Windows Management Instrumentation (WMI) | _planned_ |
@@ -79,10 +80,10 @@ This document maps the detection rules **currently covered** by the Sentryfy pro
 | Status | Technique ID | Technique Name | SPL File | KQL File |
 |--------|--------------|----------------|-----------|----------|
 | ✅ | T1562.001 | Disable or Modify Tools (Windows Defender) | [Defense Tool Termination SPL](./Rules/Splunk-SPL/Defense-Evasion/defense_tool_termination.spl) |
-| ✅ | T1036.003 | Process Masquerading (svchost.exe) | [Process Masquerading SPL](./Rules/Splunk-SPL/Defense-Evasion/svchost.spl) |
-| ✅ | T1036.008 | Masquerading: Masquerade File Type | [Masquerading SPL](./Rules/Splunk-SPL/Defense-Evasion/masquerade-file-type.spl) |
-| ✅ | T1134.004 | Parent PID Spoofing | [PPID Spoofing SPL](./Rules/Splunk-SPL/Defense-Evasion/ppid-spoof.spl) |
 | ✅ | T1218.005 | Mshta abuse | [Mshta Abuse SPL](./Rules/Splunk-SPL/Defense-Evasion/system_binary_proxy_execution.spl) |
+| ⏳ | T1036.008 | Masquerading: Masquerade File Type | _planned_ |
+| ⏳ | T1036.003 | Process Masquerading | _planned_ |
+| ⏳ | T1134.004 | Parent PID Spoofing | _planned_ |
 | ⏳ | T1070.001 | Clear Windows Event Logs | _planned_ |
 | ⏳ | T1027 | Obfuscated Files (base64, encoded commands) | _planned_ |
 | ⏳ | T1140 | Deobfuscate / Decode Files or Information | _planned_ |
@@ -124,8 +125,8 @@ This document maps the detection rules **currently covered** by the Sentryfy pro
 
 | Status | Technique ID | Technique Name | SPL File | KQL File |
 |--------|--------------|----------------|-----------|----------|
-| ✅ | T1021.002 | Remote Services: SMB/Windows Admin Share | [Admin Share SPL](./Rules/Splunk-SPL/Lateral-Movement/admin-shares.spl) |
-| ✅ | T1570 | Lateral Tool Transfer | [Lateral Tool Transfer SPL](./Rules/Splunk-SPL/Lateral-Movement/lateral-tool-transfer.spl) |
+| ⏳ | T1021.002 | Remote Services: SMB/Windows Admin Share | _planned_ |
+| ⏳ | T1570 | Lateral Tool Transfer | _planned_ |
 
 
 ---
@@ -135,9 +136,9 @@ This document maps the detection rules **currently covered** by the Sentryfy pro
 
 | Status | Technique ID | Technique Name | SPL File | KQL File |
 |--------|--------------|----------------|-----------|----------|
-| ✅ | T1219 | Remote Access Tools | [Remote Access Tools SPL](./Rules/Splunk-SPL/Command-and-Control/remote-access-tools.spl) |
-| ✅ | T1071.004 | Application Layer Protocol: DNS Tunneling | [DNS Tunneling SPL](./Rules/Splunk-SPL/Command-and-Control/dns-tunneling.spl) |
-| ✅ | T1071.004 + T1048.003 | DNS Tunneling (Network-Based + Process Correlation) | [DNS Tunneling Correlation SPL](./Rules/Splunk-SPL/Command-and-Control/dns-tunneling-correlation.spl) |
+| ⏳ | T1219 | Remote Access Tools | _planned_ |
+| ⏳ | T1071.004 | Application Layer Protocol: DNS Tunneling | _planned_ |
+| ⏳ | T1071.004 + T1048.003 | DNS Tunneling | _planned_ |
 | ⏳ | T1572 | Protocol Tunneling | _planned_ |
 
 
