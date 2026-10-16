@@ -11,14 +11,19 @@ index=windows_sysmon (EventCode=25 OR EventCode=1)
     values(User)           as User
     max(_time)             as _time
     by ProcessGuid, Computer
-| where isnotnull(tamper_type)                    
-| eval resolved_image = coalesce(proc_image, tamper_image)   
+| where isnotnull(tamper_type)
+| eval resolved_image = coalesce(proc_image, tamper_image)
 | eval src_lower    = lower(resolved_image)
 | eval parent_lower = lower(ParentImage)
 | eval is_allowlisted = if(
       match(src_lower,    "azureconnectedmachineagent.*gc_worker\.exe$")
    OR match(parent_lower, "gc_arc_service\.exe$"), 1, 0)
 | where is_allowlisted=0
+| rex field=Hashes "SHA256=(?<sha256>[A-Fa-f0-9]{64})"
+| eval image_lc=lower(resolved_image)
+| lookup tamper_allowlist.csv sha256, image AS image_lc OUTPUT reason AS allow_reason
+| where isnull(allow_reason)
+| where NOT (image_lc="c:\\windows\\system32\\smss.exe" AND User="NT AUTHORITY\\SYSTEM")
 | eval confidence = case(
       resolved_image=="<unknown process>" AND User=="NT AUTHORITY\\SYSTEM", 0.40,
       resolved_image=="<unknown process>", 0.60,

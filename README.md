@@ -137,8 +137,7 @@ This document maps the detection rules **currently covered** by the Sentryfy pro
 | Status | Technique ID | Technique Name | SPL File | KQL File |
 |--------|--------------|----------------|-----------|----------|
 | ⏳ | T1219 | Remote Access Tools | _planned_ |
-| ⏳ | T1071.004 | Application Layer Protocol: DNS Tunneling | _planned_ |
-| ⏳ | T1071.004 + T1048.003 | DNS Tunneling | _planned_ |
+| ✅ | T1071.004 + T1048.003 | DNS Tunneling | _planned_ |
 | ⏳ | T1572 | Protocol Tunneling | _planned_ |
 
 

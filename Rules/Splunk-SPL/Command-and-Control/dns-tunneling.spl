@@ -1,0 +1,20 @@
+(index=windows_sysmon (EventCode=1 OR (EventCode=3 DestinationPort=53 Protocol=udp Initiated=true)))
+OR (index=windows_suricata event_type=dns dns.type=request)
+| eventstats values(ParentImage) as parent_image values(CommandLine) as cmdline values(ParentProcessGuid) as pguid by ProcessGuid
+| eval link=if(EventCode=1, ProcessGuid, pguid)
+| eval gp_src=if(EventCode=1, ParentImage, null())
+| eventstats values(gp_src) as grandparent by link
+| where isnull(EventCode) OR EventCode!=1
+| eval dst=coalesce(DestinationIp, dest_ip)
+| eval qname=lower(rtrim(coalesce('dns.queries{}.rrname','dns.rrname'),"."))
+| rex field=qname "^(?<sub>.+)\.(?<pdomain>[^.]+\.[^.]+)$"
+| eval sublen=len(sub), win=floor(_time/300)*300
+| stats values(Image) as process values(parent_image) as parent_proc values(grandparent) as grandparent
+        values(cmdline) as cmdline values(User) as user
+        count(eval(EventCode=3)) as sysmon_conns
+        dc(sub) as uniq_subs avg(sublen) as avg_len values(pdomain) as domain
+        by win dst
+| where isnotnull(process) AND uniq_subs>=10 AND avg_len>=25
+| eval chain=mvjoin(grandparent,",")." → ".mvjoin(parent_proc,",")." → ".mvjoin(process,",")
+| eval win=strftime(win,"%F %T")
+| table win dst domain user chain cmdline sysmon_conns uniq_subs avg_len
