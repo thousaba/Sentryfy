@@ -1,0 +1,15 @@
+index=windows_sysmon EventCode=7
+| rex field=ImageLoaded "^(?<dll_dir>.+)\\\\(?<dll_name>[^\\\\]+)$"
+| rex field=Image "^(?<img_dir>.+)\\\\(?<img_name>[^\\\\]+)$"
+| eval dll_name=lower(dll_name), dll_dir=lower(dll_dir), img_dir=lower(img_dir)
+| where NOT match(dll_dir,"^c:\\\\windows\\\\(system32|syswow64|winsxs)")
+| lookup system_dlls.csv dll_name OUTPUT is_sysdll
+| where is_sysdll=1
+| eval c_unsigned=case(lower(Signed)="false",0.40, SignatureStatus!="Valid",0.25, true(),0)
+| eval c_samedir=if(dll_dir=img_dir,0.25,0)
+| eval c_userpath=if(match(img_dir,"\\\\(users|programdata)\\\\|\\\\temp\\\\"),0.15,0)
+| eval confidence=min(1.0, c_unsigned+c_samedir+c_userpath)
+| eval impact=70, risk=round(impact*confidence,0)
+| where risk>=40
+| stats earliest(_time) as first_seen latest(_time) as last_seen values(Hashes) as hashes max(risk) as risk by host Image ImageLoaded Signed SignatureStatus
+| eval first_seen=strftime(first_seen, "%Y-%m-%d %H:%M:%S"), last_seen=strftime(last_seen, "%Y-%m-%d %H:%M:%S")

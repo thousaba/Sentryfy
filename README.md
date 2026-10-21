@@ -32,8 +32,8 @@ This document maps the detection rules **currently covered** by the Sentryfy pro
 |--------|--------------|----------------|-----------|----------|
 | ✅ | T1059.003 | Windows Command Shell (cmd.exe) | [Windows Command Shell SPL](./Rules/Splunk-SPL/Execution/proccreate.spl) |
 | ✅ | T1204.002 | User Execution: Malicious File | [Malicious File SPL](./Rules/Splunk-SPL/Execution/malicious-file.spl) |
+| ✅ | T1574.001 | Hijack Execution Flow: DLL  | [DLL Sideloading](./Rules/Splunk-SPL/Execution/dls-side-loading.spl) |
 | ⏳ | T1059.005 | Visual Basic (wscript / cscript) | _planned_ |
-| ⏳ | T1059.007 | JavaScript | _planned_ |
 | ⏳ | T1047 | Windows Management Instrumentation (WMI) | _planned_ |
 | ⏳ | T1218.010 | Regsvr32 (Squiblydoo) | _planned_ |
 | ⏳ | T1218.011 | Rundll32 abuse | _planned_ |
