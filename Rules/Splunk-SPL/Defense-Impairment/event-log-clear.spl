@@ -1,0 +1,6 @@
+
+(index=windows_sysmon EventCode=1 (Image="*\\wevtutil.exe" OR Image="*\\powershell.exe" OR Image="*\\pwsh.exe")) OR (index=windows_system EventCode=104) OR (index=windows_powershell EventCode=4104 (ScriptBlockText="*Clear-EventLog*" OR ScriptBlockText="*wevtutil*cl*"))
+| bin _time span=2s
+| stats values(eval(if(EventCode=1,Image,null()))) as Image values(eval(if(EventCode=1,CommandLine,null()))) as CommandLine values(eval(if(EventCode=1,ParentImage,null()))) as ParentImage values(eval(if(EventCode=1,IntegrityLevel,null()))) as IntegrityLevel values(eval(if(EventCode=4104,ScriptBlockText,null()))) as ScriptBlockText values(EventCode) as EventCodes by Computer _time
+| where mvfind(EventCodes,"^104$")>=0
+| table _time Computer Image CommandLine ScriptBlockText ParentImage IntegrityLevel EventCodes

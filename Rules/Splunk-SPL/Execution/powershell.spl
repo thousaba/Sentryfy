@@ -1,0 +1,13 @@
+((index=windows_sysmon EventCode=15 `susp_motw_ext`) OR (index=windows_sysmon EventCode=1 (Image="*\\powershell.exe" OR Image="*\\pwsh.exe") `susp_parent_image`))
+| eval Computer=lower(Computer), user_norm=lower(coalesce(User,UserName,SubjectUserName))
+| bin _time span=1m
+| stats earliest(_time) as first_seen latest(_time) as last_seen 
+    values(eval(if(EventCode=15,TargetFilename,null()))) as downloaded_file 
+    values(eval(if(EventCode=1,Image,null()))) as Image 
+    values(eval(if(EventCode=1,ParentImage,null()))) as ParentImage 
+    values(eval(if(EventCode=1,CommandLine,null()))) as CommandLine 
+    count(eval(if(EventCode=15,1,null()))) as motw_count count(eval(if(EventCode=1,1,null()))) as ps_count by Computer user_norm _time
+| where motw_count>0 AND ps_count>0
+| eval severity=case(match(CommandLine,"(?i)(-enc|-encodedcommand|-windowstyle\\s+hidden|-executionpolicy\\s+bypass)"),"high",true(),"medium")
+| convert ctime(first_seen) ctime(last_seen)
+| table first_seen last_seen Computer user_norm severity downloaded_file Image ParentImage CommandLine

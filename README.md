@@ -20,8 +20,6 @@ This document maps the detection rules **currently covered** by the Sentryfy pro
 | ✅ | T1200 | Hardware Additions (BadUSB / HID) | [Hardware Additions SPL](./Rules/Splunk-SPL/Initial-Access/hardware-additions.spl) |
 | ✅ | T1078 | Valid Accounts (login anomaly) | [Valid Accounts](./Rules/Splunk-SPL/Initial-Access/valid-accounts.spl) |
 | ⏳ | T1133 | External Remote Services (RDP) | _planned_ |
-| ⏳ | T1195 | Supply Chain Compromise | _planned_ |
-| ⏳ | T1199 | Trusted Relationship | _planned_ |
 
 ---
 
@@ -32,12 +30,11 @@ This document maps the detection rules **currently covered** by the Sentryfy pro
 |--------|--------------|----------------|-----------|----------|
 | ✅ | T1059.003 | Windows Command Shell (cmd.exe) | [Windows Command Shell SPL](./Rules/Splunk-SPL/Execution/proccreate.spl) |
 | ✅ | T1204.002 | User Execution: Malicious File | [Malicious File SPL](./Rules/Splunk-SPL/Execution/malicious-file.spl) |
-| ✅ | T1574.001 | Hijack Execution Flow: DLL  | [DLL Sideloading](./Rules/Splunk-SPL/Execution/dls-side-loading.spl) |
-| ⏳ | T1059.005 | Visual Basic (wscript / cscript) | _planned_ |
+| ✅ | T1574.001 | Hijack Execution Flow: DLL  | [DLL Sideloading](./Rules/Splunk-SPL/Execution/dll-side-loading.spl) |
+| ✅ | T1059.001 | Powershell | [Powershell](./Rules/Splunk-SPL/Execution/powershell.spl) |
 | ⏳ | T1047 | Windows Management Instrumentation (WMI) | _planned_ |
 | ⏳ | T1218.010 | Regsvr32 (Squiblydoo) | _planned_ |
 | ⏳ | T1218.011 | Rundll32 abuse | _planned_ |
-| ⏳ | T1203 | Exploitation for Client Execution | _planned_ |
 
 ---
 
@@ -51,7 +48,6 @@ This document maps the detection rules **currently covered** by the Sentryfy pro
 | ✅ | T1176 | Browser Extensions | [Browser Extensions](./Rules/Splunk-SPL/Persistence/browser-extensions.spl) |
 | ✅ | T1547.001 | Registry Run Keys / Startup Folder | [Registry Run Keys SPL](./Rules/Splunk-SPL/Persistence/registry_run_keys.spl) |
 | ⏳ | T1543.003 | Windows Service | _planned_ |
-| ⏳ | T1136 | Local Account Creation | _planned_ |
 | ⏳ | T1546.003 | WMI Event Subscription | _planned_ |
 | ⏳ | T1546.008 | Accessibility Features (sethc / utilman) | _planned_ |
 | ⏳ | T1505.003 | Web Shell | _planned_ |
@@ -70,26 +66,23 @@ This document maps the detection rules **currently covered** by the Sentryfy pro
 | ✅ | T1548.002 | Bypass User Account Control (fodhelper) | [Bypass UAC SPL](./Rules/Splunk-SPL/Privilege-Escalation/uac-bypass.spl) |
 | ⏳ | T1134.001 | Access Token Manipulation: Token Impersonation | _planned_ |
 | ⏳ | T1055.003 | Thread Execution Hijacking | _planned_ |
-| ⏳ | T1574.002 | DLL Side-Loading | _planned_ |
 
 ---
 
-## TA0005 — Defense Evasion
+## TA0005 — Stealth
 
 
 | Status | Technique ID | Technique Name | SPL File | KQL File |
 |--------|--------------|----------------|-----------|----------|
-| ✅ | T1562.001 | Disable or Modify Tools (Windows Defender) | [Defense Tool Termination SPL](./Rules/Splunk-SPL/Defense-Evasion/defense_tool_termination.spl) |
-| ✅ | T1218.005 | Mshta abuse | [Mshta Abuse SPL](./Rules/Splunk-SPL/Defense-Evasion/system_binary_proxy_execution.spl) |
+| ✅ | T1562.001 | Disable or Modify Tools (Windows Defender) | [Defense Tool Termination SPL](./Rules/Splunk-SPL/Stealth/defense_tool_termination.spl) |
+| ✅ | T1218.005 | Mshta abuse | [Mshta Abuse SPL](./Rules/Splunk-SPL/Stealth/system_binary_proxy_execution.spl) |
 | ⏳ | T1036.008 | Masquerading: Masquerade File Type | _planned_ |
 | ⏳ | T1036.003 | Process Masquerading | _planned_ |
 | ⏳ | T1134.004 | Parent PID Spoofing | _planned_ |
-| ⏳ | T1070.001 | Clear Windows Event Logs | _planned_ |
 | ⏳ | T1027 | Obfuscated Files (base64, encoded commands) | _planned_ |
 | ⏳ | T1140 | Deobfuscate / Decode Files or Information | _planned_ |
 | ⏳ | T1112 | Modify Registry | _planned_ |
 | ⏳ | T1070.004 | File Deletion | _planned_ |
-| ⏳ | T1497 | Virtualization / Sandbox Evasion | _planned_ |
 | ⏳ | T1564.001 | Hidden Files and Directories | _planned_ |
 
 ---
@@ -103,7 +96,6 @@ This document maps the detection rules **currently covered** by the Sentryfy pro
 | ✅ | T1110.003 | Password Spraying | [Password Spraying SPL](./Rules/Splunk-SPL/Credential-Access/password-spraying.spl) | [Password Spraying KQL](./Rules/Sentinel-KQL/Credential-Access/password-spraying.kql) |
 | ✅ | T1003.001 | OS Credential Dumping: LSASS Memory | [LSASS Memory SPL](./Rules/Splunk-SPL/Credential-Access/lsass-access.spl) |
 | ⏳ | T1555 | Credentials from Password Stores (browsers) | _planned_ | |
-| ⏳ | T1558.003 | Kerberoasting | _planned_ | |
 | ⏳ | T1552.001 | Unsecured Credentials in Files | _planned_ | |
 
 ---
@@ -142,6 +134,16 @@ This document maps the detection rules **currently covered** by the Sentryfy pro
 
 
 ---
+
+
+### TA0112 — Defense Impairment
+
+
+| Status | Technique ID | Technique Name | SPL File | KQL File |
+|--------|--------------|----------------|-----------|----------|
+| ✅ | T1685.005 | Disable or Modify Windows Event Logs | [Event Log Clear](./Rules/Splunk-SPL/Defense-Impairment/event-log-clear.spl) [Security Log Clear](./Rules/Splunk-SPL/Defense-Impairment/sec-log-clear.spl) |
+
+
 
 ## 🔬 Test Environment
 

@@ -1,0 +1,6 @@
+(index=windows_sysmon EventCode=1) OR (index=windows_security EventCode=1102)
+| eval corr_pid=case(EventCode=1,tostring(ProcessId),EventCode=1102,tostring(ClientProcessId))
+| bin _time span=2s
+| stats values(eval(if(EventCode=1,Image,null()))) as Image values(eval(if(EventCode=1,CommandLine,null()))) as CommandLine values(eval(if(EventCode=1,ParentImage,null()))) as ParentImage values(eval(if(EventCode=1,IntegrityLevel,null()))) as IntegrityLevel values(eval(if(EventCode=1102,SubjectUserName,null()))) as ClearUser values(EventCode) as EventCodes by Computer corr_pid _time
+| where mvfind(EventCodes,"1102")>=0
+| table _time Computer ClearUser Image CommandLine ParentImage IntegrityLevel corr_pid EventCodes
